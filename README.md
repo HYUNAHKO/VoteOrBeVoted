@@ -60,6 +60,7 @@
 └─ libs/
     ├─ three.min.js
     └─ gsap.min.js   ← optional, 카메라/오브젝트 애니메이션용
+`\`\`\``
 
 ---
 
