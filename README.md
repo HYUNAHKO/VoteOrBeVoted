@@ -61,8 +61,10 @@
     ├─ three.min.js
     └─ gsap.min.js   ← optional, 카메라/오브젝트 애니메이션용
 
-</br>
+---
+
 ## 🗂️ 파일 및 디렉터리 설명
+
 
 ### index.html
 - 최상위 HTML 파일입니다.
