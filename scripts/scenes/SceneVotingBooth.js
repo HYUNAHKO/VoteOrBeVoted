@@ -199,10 +199,10 @@ class SceneVotingBooth {
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
     right.y = 0; right.normalize();
 
-    if (this.keys['w']) this.camera.position.add(forward.multiplyScalar(this.moveSpeed));
-    if (this.keys['s']) this.camera.position.add(forward.multiplyScalar(-this.moveSpeed));
-    if (this.keys['a']) this.camera.position.add(right.multiplyScalar(-this.moveSpeed));
-    if (this.keys['d']) this.camera.position.add(right.multiplyScalar(this.moveSpeed));
+    if (this.keys['w']) this.camera.position.add(forward.clone().multiplyScalar(this.moveSpeed));
+    if (this.keys['s']) this.camera.position.add(forward.clone().multiplyScalar(-this.moveSpeed));
+    if (this.keys['a']) this.camera.position.add(right.clone().multiplyScalar(-this.moveSpeed));
+    if (this.keys['d']) this.camera.position.add(right.clone().multiplyScalar(this.moveSpeed));
 
     // 경계 제한
     this.camera.position.x = Math.max(-14, Math.min(14, this.camera.position.x));
