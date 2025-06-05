@@ -80,3 +80,17 @@ button:hover {
   font-size: 18px;
   pointer-events: none;
 }
+
+/* 공통 장면 오버레이 */
+.scene-overlay {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 16px;
+  pointer-events: none;
+}
