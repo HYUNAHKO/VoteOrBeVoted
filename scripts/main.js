@@ -26,11 +26,39 @@ window.addEventListener('DOMContentLoaded', () => {
   const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
   const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
   const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
+  // voter path scenes
+  const voterRally = new SceneVoterRally(renderer, camera, sceneManager);
+  const voterPolicy = new SceneVoterPolicySearch(renderer, camera, sceneManager);
+  const voterStreet = new SceneVoterStreet(renderer, camera, sceneManager);
+  const voterFind = new SceneVoterFindPolling(renderer, camera, sceneManager);
+  const voterChoice = new SceneVoterVoteChoice(renderer, camera, sceneManager);
+  const voterPolling = new SceneVoterPollingBooth(renderer, camera, sceneManager);
+  // candidate path scenes
+  const candRegister = new SceneCandidateRegister(renderer, camera, sceneManager);
+  const candBudget = new SceneCandidateBudget(renderer, camera, sceneManager);
+  const candSites = new SceneCandidateSelectSites(renderer, camera, sceneManager);
+  const candCampaign = new SceneCandidateCampaign(renderer, camera, sceneManager);
+  const candForecast = new SceneCandidateForecast(renderer, camera, sceneManager);
+  const candExit = new SceneCandidateExitPoll(renderer, camera, sceneManager);
+  const candInaug = new SceneCandidateInauguration(renderer, camera, sceneManager);
 
   sceneManager.addScene('menu', menuScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
+  sceneManager.addScene('voterRally', voterRally);
+  sceneManager.addScene('voterPolicy', voterPolicy);
+  sceneManager.addScene('voterStreet', voterStreet);
+  sceneManager.addScene('voterFind', voterFind);
+  sceneManager.addScene('voterChoice', voterChoice);
+  sceneManager.addScene('voterPolling', voterPolling);
+  sceneManager.addScene('candRegister', candRegister);
+  sceneManager.addScene('candBudget', candBudget);
+  sceneManager.addScene('candSites', candSites);
+  sceneManager.addScene('candCampaign', candCampaign);
+  sceneManager.addScene('candForecast', candForecast);
+  sceneManager.addScene('candExit', candExit);
+  sceneManager.addScene('candInaug', candInaug);
 
   // 5) 최초 씬 설정: 메뉴 화면
   sceneManager.transitionTo('menu');
