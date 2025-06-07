@@ -34,7 +34,7 @@
 
 <table>
 <tr>
-<td><img src="./assets/floatingGUide" alt="Scene 진입시 floating message" width="300"/></td>
+<td><img src="./assets/floatingGuide" alt="Scene 진입시 floating message" width="300"/></td>
 <td><img src="./assets/mouseHover.png" alt="마우스 hover시 선거 벽보 아이템 표시" width="300"/></td>
 <td><img src="./assets/selection.png" alt="선택지 모달" width="300"/></td>
 </tr>
