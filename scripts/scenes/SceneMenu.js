@@ -47,6 +47,7 @@ class SceneMenu {
       <h1>대선 게임</h1>
       <button id="btn-voter">▶ 유권자로 시작</button>
       <button id="btn-candidate">▶ 후보로 시작</button>
+      <button id="btn-result">▶ 개표 결과 화면(연타 테스트)</button>
     `;
     div.style.display = 'none';
     document.body.appendChild(div);
@@ -57,6 +58,9 @@ class SceneMenu {
     });
     document.getElementById('btn-candidate').addEventListener('click', () => {
       this.sceneManager.transitionTo('candidateCamp');
+    });
+    document.getElementById('btn-result').addEventListener('click', () => {
+    this.sceneManager.transitionTo('resultBroadcast');
     });
   }
 }

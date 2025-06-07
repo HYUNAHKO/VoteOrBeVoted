@@ -27,6 +27,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
   const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
   const resultBroadcastScene = new SceneResultBroadcast(renderer, camera, sceneManager);
+  const resultVictoryScene = new ResultVictoryScene(renderer, camera, sceneManager);
+  const fiveYearsLaterScene = new ResultFiveYearsLaterScene(renderer, camera, sceneManager);
 
 
   sceneManager.addScene('menu', menuScene);
@@ -34,6 +36,8 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
   sceneManager.addScene('resultBroadcast', resultBroadcastScene);
+  sceneManager.addScene('victory', resultVictoryScene);
+  sceneManager.addScene('fiveYearsLater', fiveYearsLaterScene);
 
   // 5) 최초 씬 설정: 메뉴 화면
   sceneManager.transitionTo('menu');

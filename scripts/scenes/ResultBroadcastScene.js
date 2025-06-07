@@ -31,6 +31,9 @@ class SceneResultBroadcast {
 
     this.progressBar.style.width = `${progress * 100}%`;
 
+    const keyProgress = Math.min(1, this.keyPressCount / this.requiredCount);
+    this.tapProgressBar.style.width = `${keyProgress * 100}%`;
+
     if (elapsed >= this.timeLimit) {
       if (this.keyPressCount >= this.requiredCount) {
         this.sceneManager.transitionTo('victory');
@@ -64,18 +67,24 @@ class SceneResultBroadcast {
     div.style.textAlign = 'center';
     div.style.display = 'none';
     div.innerHTML = `
-      <p>🔥 개표 중... 키보드 연타로 당신의 운명을 바꾸세요!</p>
+      <p>🔥 개표 중... 당신의 후보가 당선되려면 <strong>Enter 키</strong>를 연타하세요!</p>
+      <div style="width: 100%; height: 20px; background: gray; margin-bottom: 8px;">
+        <div id="tap-progress-bar" style="height: 100%; background: orange; width: 0%;"></div>
+      </div>
       <div style="width: 100%; height: 20px; background: gray;">
         <div id="progress-bar" style="height: 100%; background: lime; width: 0%;"></div>
       </div>
     `;
     document.body.appendChild(div);
     this.progressBar = document.getElementById('progress-bar');
+    this.tapProgressBar = document.getElementById('tap-progress-bar');
 
     this._onKeyDown = (e) => {
-      if ([' ', 'Enter'].includes(e.key)) {
+      if (e.key === 'Enter') {ㄴ
         this.keyPressCount++;
       }
     };
   }
 }
+
+
