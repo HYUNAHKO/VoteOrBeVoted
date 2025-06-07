@@ -80,3 +80,42 @@ button:hover {
   font-size: 18px;
   pointer-events: none;
 }
+
+/* ReturnHomeScene 전용 클래스들 */
+.hover-label {
+  position: absolute;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 18px;
+  pointer-events: none;
+  display: none;
+  z-index: 1000;
+}
+
+.choice-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  display: none;
+  z-index: 2000;
+  max-width: 400px;
+}
+
+.choice-modal p {
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.choice-modal button {
+  display: block;
+  width: 200px;
+  margin: 10px auto;
+}

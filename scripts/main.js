@@ -26,11 +26,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
   const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
   const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
+  const returnHomeScene = new SceneReturnHome(renderer, camera, sceneManager);
 
   sceneManager.addScene('menu', menuScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
+  sceneManager.addScene('returnHome', returnHomeScene);
 
   // 5) 최초 씬 설정: 메뉴 화면
   sceneManager.transitionTo('menu');

@@ -5,12 +5,12 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 // === 설정 ===
 // 시각화할 파일 경로 (glb 또는 fbx 중 하나만)
-const MODEL_PATH = '../assets/indoor.glb'; // 예시: '../assets/indoor.glb' 또는 '../assets/outdoor.fbx'
+const MODEL_PATH = '../assets/outdoor.glb'; // 예시: '../assets/indoor.glb' 또는 '../assets/outdoor.fbx'
 
 // === 기본 THREE.js 세팅 ===
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 10);
+camera.position.set(0, 2, 5);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -102,7 +102,6 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
-
 // === Hover Label Setup ===
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -145,3 +144,4 @@ function onMouseMove(event) {
 }
 
 window.addEventListener('mousemove', onMouseMove);
+

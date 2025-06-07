@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReturnHomeScene Debug</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+  <style>
+    /* 디버그 전용 추가 스타일 */
+    #debug-info {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <!-- Three.js 렌더러가 붙을 캔버스 -->
+  <div id="canvas-container">
+    <!-- 디버그 정보 -->
+    <div id="debug-info">
+      <strong>ReturnHomeScene Debug</strong><br>
+      W/A/S/D: 이동<br>
+      P: 디버그 정보 출력<br>
+      마우스: Wall_Poster 오브젝트 호버/클릭<br>
+      <span id="wall-poster-count">Wall_Poster: Not Found</span><br>
+      <span id="model-status">Model: Loading...</span>
+    </div>
+  </div>
+  
+  <!-- 스크립트 로드 -->
+  <!-- CDN (Content Delivery Network)을 사용, importmap 설정 -->
+  <script type="importmap">
+  {
+      "imports": {
+          "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/"
+      }
+  }
+  </script>
+  
+  <!-- 기존 방식 스크립트들 (THREE는 module에서만 로드) -->
+  <script src="scripts/SceneManager.js"></script>
+  
+  <!-- Module 방식 스크립트 -->
+  <script type="module" src="scripts/scenes/ReturnHomeScene.js"></script>
+  
+  <script type="module">
+    import * as THREE from 'three';
+    
+    // THREE를 전역에 노출 (non-module 스크립트에서 사용 가능하도록)
+    window.THREE = THREE;
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1) 렌더러 생성
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      // 2) 카메라 생성
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+
+      // 3) Mock SceneManager (씬 전환 테스트용)
+      const mockSceneManager = {
+        transitionTo: (sceneName) => {
+          console.log(`[Mock] Transitioning to: ${sceneName}`);
+          alert(`씬 전환: ${sceneName}\n(실제 전환은 전체 프로젝트에서만 작동합니다)`);
+        }
+      };
+
+      // SceneReturnHome이 로드될 때까지 기다리기
+      const checkAndInit = () => {
+        if (typeof window.SceneReturnHome !== 'undefined') {
+          initScene();
+        } else {
+          setTimeout(checkAndInit, 100);
+        }
+      };
+      checkAndInit();
+
+      function initScene() {
+        // 4) ReturnHomeScene 생성 및 실행
+        const returnHomeScene = new window.SceneReturnHome(renderer, camera, mockSceneManager);
+        
+        // 씬 진입
+        returnHomeScene.onEnter();
+        
+        // Wall_Poster 개수 업데이트 함수
+        const updateWallPosterCount = () => {
+          const hasWallPoster = returnHomeScene.wallPosterObject ? 'Found' : 'Not Found';
+          document.getElementById('wall-poster-count').textContent = `Wall_Poster: ${hasWallPoster}`;
+        };
+        
+        // 5초마다 Wall_Poster 상태 업데이트
+        setInterval(updateWallPosterCount, 5000);
+        updateWallPosterCount();
+
+        // 5) 렌더링 루프
+        function animate() {
+          requestAnimationFrame(animate);
+          
+          // 씬 업데이트
+          if (returnHomeScene.update) {
+            returnHomeScene.update();
+          }
+          
+          // 렌더링
+          if (returnHomeScene.render) {
+            returnHomeScene.render();
+          }
+          renderer.render(returnHomeScene.scene, camera);
+        }
+        animate();
+        
+        // 7) 디버그 키 추가
+        window.addEventListener('keydown', (event) => {
+          if (event.key === 'p' || event.key === 'P') {
+            console.log('=== Debug Info ===');
+            console.log('Camera position:', camera.position);
+            console.log('Wall_Poster object:', returnHomeScene.wallPosterObject ? 'Found' : 'Not Found');
+            if (returnHomeScene.wallPosterObject) {
+              console.log('Wall_Poster name:', returnHomeScene.wallPosterObject.name);
+            }
+            console.log('Scene children:', returnHomeScene.scene.children.length);
+          }
+        });
+      }
+
+      // 6) 창 크기 변화 처리
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    });
+  </script>
+</body>
+</html> 
