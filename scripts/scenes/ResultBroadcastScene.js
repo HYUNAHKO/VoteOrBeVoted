@@ -1,0 +1,81 @@
+class SceneResultBroadcast {
+  constructor(renderer, camera, sceneManager) {
+    this.renderer = renderer;
+    this.camera = camera;
+    this.sceneManager = sceneManager;
+    this.scene = new THREE.Scene();
+    this.keyPressCount = 0;
+    this.timeLimit = 5000; // 5초
+    this.requiredCount = 30; // 당선을 위한 최소 입력
+    this._initScene();
+    this._createUI();
+  }
+
+  onEnter() {
+    this.keyPressCount = 0;
+    this.startTime = performance.now();
+    document.getElementById('result-ui').style.display = 'block';
+
+    window.addEventListener('keydown', this._onKeyDown);
+  }
+
+  onExit() {
+    document.getElementById('result-ui').style.display = 'none';
+    window.removeEventListener('keydown', this._onKeyDown);
+  }
+
+  update() {
+    const now = performance.now();
+    const elapsed = now - this.startTime;
+    const progress = Math.min(1, elapsed / this.timeLimit);
+
+    this.progressBar.style.width = `${progress * 100}%`;
+
+    if (elapsed >= this.timeLimit) {
+      if (this.keyPressCount >= this.requiredCount) {
+        this.sceneManager.transitionTo('victory');
+      } else {
+        this.sceneManager.transitionTo('fiveYearsLater');
+      }
+    }
+  }
+
+  render() {
+    this.renderer.setClearColor(0x000000);
+  }
+
+  _initScene() {
+    const light = new THREE.AmbientLight(0xffffff, 0.6);
+    this.scene.add(light);
+    // 추가적으로 후보 얼굴, 카운트 효과 등 모델 넣을 수 있음
+  }
+
+  _createUI() {
+    const div = document.createElement('div');
+    div.id = 'result-ui';
+    div.style.position = 'absolute';
+    div.style.top = '50%';
+    div.style.left = '50%';
+    div.style.transform = 'translate(-50%, -50%)';
+    div.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    div.style.color = 'white';
+    div.style.padding = '20px';
+    div.style.fontSize = '20px';
+    div.style.textAlign = 'center';
+    div.style.display = 'none';
+    div.innerHTML = `
+      <p>🔥 개표 중... 키보드 연타로 당신의 운명을 바꾸세요!</p>
+      <div style="width: 100%; height: 20px; background: gray;">
+        <div id="progress-bar" style="height: 100%; background: lime; width: 0%;"></div>
+      </div>
+    `;
+    document.body.appendChild(div);
+    this.progressBar = document.getElementById('progress-bar');
+
+    this._onKeyDown = (e) => {
+      if ([' ', 'Enter'].includes(e.key)) {
+        this.keyPressCount++;
+      }
+    };
+  }
+}
