@@ -1,4 +1,6 @@
 # 3D 모델 뷰어 `visualize.js`
+![screenshot](./assets/visualize_screenshot.png)
+
 ## 기능
 
 - 3D 모델 로딩 및 표시 (GLB, FBX 형식 지원)
