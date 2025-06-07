@@ -1,11 +1,6 @@
 ## 3D 모델 뷰어 `visualize.js`
 
-<table>
-<tr>
-<td><img src="./assets/visualize_screenshot.png" alt="3D 모델 뷰어" width="400"/></td>
-<td><img src="./assets/visualize_screenshot.png" alt="오브젝트 인터랙션" width="400"/></td>
-</tr>
-</table>
+![스크린샷](./assets/visualize_screenshot.png)
 
 ### 기능 구현
 
@@ -34,7 +29,7 @@
 
 <table>
 <tr>
-<td><img src="./assets/floatingGuide" alt="Scene 진입시 floating message" width="300"/></td>
+<td><img src="./assets/floatingGuide.png" alt="Scene 진입시 floating message" width="300"/></td>
 <td><img src="./assets/mouseHover.png" alt="마우스 hover시 선거 벽보 아이템 표시" width="300"/></td>
 <td><img src="./assets/selection.png" alt="선택지 모달" width="300"/></td>
 </tr>
