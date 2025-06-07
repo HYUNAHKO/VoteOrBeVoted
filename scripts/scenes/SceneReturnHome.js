@@ -1,5 +1,5 @@
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
+import { envModelLoader } from '../utils/processImport.js';
 
 class SceneReturnHome {
     constructor(renderer, camera, sceneManager) {
@@ -103,74 +103,26 @@ class SceneReturnHome {
     }
 
     _loadOutdoorModel() {
-        const loader = new GLTFLoader();
-        
-        // 파일 경로 확인 (debug-return-home.html과 index.html 모두에서 작동하도록)
         const possiblePaths = [
             './assets/outdoor.glb',      // debug-return-home.html에서
             '../assets/outdoor.glb',     // scripts 폴더에서
             'assets/outdoor.glb'         // 상대 경로
         ];
         
-        // 첫 번째 경로로 시도
-        this._tryLoadModel(loader, possiblePaths, 0);
-    }
-    
-    _tryLoadModel(loader, paths, index) {
-        if (index >= paths.length) {
-            console.error('모든 경로에서 outdoor.glb 로딩 실패');
-            console.log('=== Outdoor Model Loading Failed ===');
-            console.log('Wall_Poster object found: NO');
-            
-            // UI 업데이트
-            const modelStatus = document.getElementById('model-status');
-            if (modelStatus) modelStatus.textContent = 'Model: Load Failed';
-            return;
-        }
-        
-        const currentPath = paths[index];
-        console.log(`Trying to load outdoor.glb from: ${currentPath}`);
-        
-        // UI 업데이트
-        const modelStatus = document.getElementById('model-status');
-        if (modelStatus) modelStatus.textContent = `Model: Trying ${currentPath}`;
-        
-        loader.load(
-            currentPath,
-            (gltf) => {
-                const model = gltf.scene;
-                this.scene.add(model);
-                console.log('=== Outdoor Model Loaded ===');
-                console.log(`Successfully loaded from: ${currentPath}`);
-                this._collectWallPosterObjects(model);
-                console.log('Wall_Poster object found:', this.wallPosterObject ? 'YES' : 'NO');
-                if (this.wallPosterObject) {
-                    console.log('Wall_Poster name:', this.wallPosterObject.name);
-                }
-                
-                // UI 업데이트
-                if (modelStatus) modelStatus.textContent = 'Model: Loaded Successfully';
+        envModelLoader.loadEnvironmentModel(
+            'outdoor',
+            possiblePaths,
+            this.scene,
+            (modelRoot) => {
+                // 성공 콜백: 모델이 로드되면 Wall_Poster 오브젝트를 찾아서 저장
+                this.wallPosterObject = envModelLoader.findObjectInModel('outdoor', 'Wall_Poster');
             },
-            undefined,
+            null, // 진행 상황 콜백 (사용하지 않음)
             (error) => {
-                console.warn(`Failed to load from ${currentPath}:`, error.message);
-                // 다음 경로로 시도
-                this._tryLoadModel(loader, paths, index + 1);
+                // 에러 콜백
+                console.error('Outdoor model loading failed:', error);
             }
         );
-    }
-
-    _collectWallPosterObjects(object, prefix = '') {
-        if (object.name) {
-            console.log(prefix + object.name);
-            if (object.name.includes('Wall_Poster') && !this.wallPosterObject) {
-                this.wallPosterObject = object;
-                console.log(`✅ Found Wall_Poster: ${object.name}`);
-            }
-        }
-        if (object.children && object.children.length > 0) {
-            object.children.forEach(child => this._collectWallPosterObjects(child, prefix + '  '));
-        }
     }
 
     _setupEventListeners() {
