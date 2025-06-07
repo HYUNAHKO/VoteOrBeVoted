@@ -47,9 +47,16 @@
 │   │
 │   └─ scenes/
 │       ├─ SceneMenu.js           ← 첫 화면 (유권자 or 후보 선택)
-│       ├─ SceneVotingBooth.js    ← 투표소 씬
+│       ├─ voter/                 ← 유권자 경로 관련 씬 모음
+│       │   ├─ SceneVoterRally.js
+│       │   ├─ SceneVoterPolicySearch.js
+│       │   └─ ...
+│       ├─ candidate/             ← 후보 경로 관련 씬 모음
+│       │   ├─ SceneCandidateRegister.js
+│       │   └─ ...
+│       ├─ SceneVotingBooth.js    ← 기본 투표소 씬 예시
 │       ├─ SceneTVCount.js        ← TV 보면서 개표 씬
-│       └─ SceneCandidateCamp.js  ← 후보 씬 (추후 구현)
+│       └─ SceneCandidateCamp.js  ← 후보 캠프 기본 씬
 │
 ├─ assets/
 │   ├─ models/      ← GLTF/OBJ 등 3D 모델
@@ -115,6 +122,14 @@
 ### scripts/scenes/SceneCandidateCamp.js
 - 후보 캠프 씬을 위한 기본 모듈입니다.
 - 3D 공간에 캠프 구조를 배치하며, 향후 토론/캠페인 기능 확장을 고려한 구조입니다.
+
+---
+
+### 기타 voter/candidate 하위 씬
+- `scripts/scenes/voter/` 폴더와 `scripts/scenes/candidate/` 폴더에는
+  유권자와 후보의 세부 흐름을 담당하는 여러 씬 모듈이 들어 있습니다.
+- 각 파일은 기본적인 Three.js 씬 구조와 간단한 오버레이 UI를 포함한
+  템플릿 형태로 제공됩니다.
 
 ---
 
