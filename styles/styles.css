@@ -119,3 +119,46 @@ button:hover {
   width: 200px;
   margin: 10px auto;
 }
+
+/* Floating Message */
+.floating-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 20px 30px;
+    border-radius: 15px;
+    font-family: 'Malgun Gothic', sans-serif;
+    font-size: 18px;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: floatingFadeIn 1s ease-out, floatingFadeOut 1s ease-in 4s forwards;
+    pointer-events: none;
+}
+
+@keyframes floatingFadeIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translateY(0);
+    }
+}
+
+@keyframes floatingFadeOut {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(-20px);
+    }
+}
