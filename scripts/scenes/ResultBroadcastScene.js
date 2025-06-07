@@ -67,7 +67,7 @@ class SceneResultBroadcast {
     div.style.textAlign = 'center';
     div.style.display = 'none';
     div.innerHTML = `
-      <p>🔥 개표 중... 당신의 후보가 당선되려면 <strong>Enter 키</strong>를 연타하세요!</p>
+      <p>🔥 개표 중... 당신의 후보가 당선되려면 <strong>Spacebar</strong>를 연타하세요!</p>
       <div style="width: 100%; height: 20px; background: gray; margin-bottom: 8px;">
         <div id="tap-progress-bar" style="height: 100%; background: orange; width: 0%;"></div>
       </div>
@@ -80,7 +80,7 @@ class SceneResultBroadcast {
     this.tapProgressBar = document.getElementById('tap-progress-bar');
 
     this._onKeyDown = (e) => {
-      if (e.key === 'Enter') {ㄴ
+      if ([' ', 'Enter'].includes(e.key)) {
         this.keyPressCount++;
       }
     };

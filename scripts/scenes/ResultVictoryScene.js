@@ -45,7 +45,7 @@ class ResultVictoryScene {
     if (document.getElementById('victory-ui')) return;
     const div = document.createElement('div');
     div.id = 'victory-ui';
-    div.innerHTML = `<h1 style="color: darkgreen; font-size: 2rem;">🎉 당신이 당선되었습니다!</h1>`;
+    div.innerHTML = `<h1 style="color: darkgreen; font-size: 2rem;">🎉 당신의 후보가 당선되었습니다!</h1>`;
     div.style.position = 'absolute';
     div.style.top = '40%';
     div.style.left = '50%';
