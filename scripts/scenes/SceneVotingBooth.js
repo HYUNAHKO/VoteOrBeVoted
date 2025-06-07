@@ -21,6 +21,9 @@ class SceneVotingBooth {
 
   onExit() {
     // 씬을 떠날 때 추가 정리할 것이 있다면 여기에
+    window.removeEventListener('keydown', this._keydownHandler);
+    window.removeEventListener('keyup', this._keyupHandler);
+    window.removeEventListener('mousemove', this._mouseMoveHandler);
   }
 
   update() {

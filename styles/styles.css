@@ -80,3 +80,11 @@ button:hover {
   font-size: 18px;
   pointer-events: none;
 }
+
+/* SceneIntro 시작 버튼 */
+#intro-start {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

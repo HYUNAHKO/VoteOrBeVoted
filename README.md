@@ -14,19 +14,23 @@
 
 ## 주요 기능
 
-1. **첫 화면 (SceneMenu)**
+1. **인트로 (SceneIntro)**
+   - 짧은 투표 역사 영상을 보여준 후 "시작하기" 버튼을 제공합니다.
+   - 버튼 클릭 시 투표소 씬으로 바로 이동합니다.
+
+2. **메뉴 화면 (SceneMenu)**
    - “유권자” 또는 “후보”를 선택할 수 있는 메뉴 UI 제공
    - 버튼 클릭 시 다음 씬(SceneVotingBooth 또는 SceneCandidateCamp)으로 전환
 
-2. **투표소 씬 (SceneVotingBooth)**
+3. **투표소 씬 (SceneVotingBooth)**
    - 투표소 내부를 3D 모델(의자, 책상, 투표함 등)로 구성
    - 간단한 투표 애니메이션 또는 인터랙션(예: 투표 용지 선택, 제출 등) 예시 포함
 
-3. **개표 씬 (SceneTVCount)**
+4. **개표 씬 (SceneTVCount)**
    - TV 화면(Plane + 영상 텍스처) 또는 실시간 결과 수치 배치
    - 투표소 씬에서 버튼 클릭 후 해당 씬으로 전환되며, 개표 과정을 시뮬레이션
 
-4. **후보 캠프 씬 (SceneCandidateCamp)**
+5. **후보 캠프 씬 (SceneCandidateCamp)**
    - 후보 진영(캠프) 내부를 3D 환경으로 구성
    - 향후 토론 또는 캠페인 로직 확장을 위한 자리만 표시하는 기본 구조 제공
 
@@ -46,10 +50,19 @@
 │   ├─ SceneManager.js
 │   │
 │   └─ scenes/
+│       ├─ SceneIntro.js          ← 인트로 슬라이드 씬
 │       ├─ SceneMenu.js           ← 첫 화면 (유권자 or 후보 선택)
-│       ├─ SceneVotingBooth.js    ← 투표소 씬
+│       ├─ voter/                 ← 유권자 경로 관련 씬 모음
+│       │   ├─ SceneVoterRally.js
+│       │   ├─ SceneVoterPolicySearch.js
+│       │   └─ ...
+│       ├─ candidate/             ← 후보 경로 관련 씬 모음
+│       │   ├─ SceneCandidateRegister.js
+│       │   └─ ...
+│       ├─ SceneVotingBooth.js    ← 기본 투표소 씬 예시
 │       ├─ SceneTVCount.js        ← TV 보면서 개표 씬
-│       └─ SceneCandidateCamp.js  ← 후보 씬 (추후 구현)
+│       └─ SceneCandidateCamp.js  ← 후보 캠프 기본 씬
+
 │
 ├─ assets/
 │   ├─ models/      ← GLTF/OBJ 등 3D 모델
@@ -71,6 +84,7 @@
 - 최상위 HTML 파일입니다.
 - Three.js, SceneManager, main.js를 로드합니다.
 - `<canvas>` 요소 및 Overlay UI용 `<div>`를 포함합니다.
+- 게임 스크립트는 ES 모듈 형식으로 `main.js`에서 불러옵니다.
 
 ---
 
@@ -92,6 +106,11 @@
 - Three.js 렌더러, 카메라, 기본 조명 세팅을 처리합니다.
 - SceneManager를 생성하고 초기 씬을 로드합니다.
 
+---
+
+### scripts/scenes/SceneIntro.js
+- 간단한 투표 역사 슬라이드를 보여주는 인트로 씬입니다.
+- 슬라이드가 끝나면 "시작하기" 버튼으로 투표소 씬으로 이동합니다.
 ---
 
 ### scripts/scenes/SceneMenu.js

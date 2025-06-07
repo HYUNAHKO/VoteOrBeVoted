@@ -2,6 +2,9 @@
  * main.js
  * - Three.js 초기화, SceneManager 생성 및 씬 등록, 렌더 루프를 시작
  */
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+import SceneIntro from './scripts/scenes/SceneIntro.js';
+
 window.addEventListener('DOMContentLoaded', () => {
   // 1) 렌더러 생성
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -22,18 +25,20 @@ window.addEventListener('DOMContentLoaded', () => {
   const sceneManager = new SceneManager(renderer, camera);
 
   // 4) 씬 인스턴스 생성 및 등록
+  const introScene = new SceneIntro(renderer, camera, sceneManager);
   const menuScene = new SceneMenu(renderer, camera, sceneManager);
   const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
   const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
   const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
 
+  sceneManager.addScene('intro', introScene);
   sceneManager.addScene('menu', menuScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
 
-  // 5) 최초 씬 설정: 메뉴 화면
-  sceneManager.transitionTo('menu');
+  // 5) 최초 씬 설정: 인트로 화면
+  sceneManager.transitionTo('intro');
 
   // 6) 렌더링 루프 호출
   sceneManager.renderLoop();
