@@ -7,6 +7,7 @@ class SceneResultBroadcast {
     this.keyPressCount = 0;
     this.timeLimit = 5000; // 5초
     this.requiredCount = 30; // 당선을 위한 최소 입력
+    this.hasHandledResult = false;
     this._initScene();
     this._createUI();
   }
@@ -14,6 +15,7 @@ class SceneResultBroadcast {
   onEnter() {
     this.keyPressCount = 0;
     this.startTime = performance.now();
+    this.hasHandledResult = false;
     document.getElementById('result-ui').style.display = 'block';
 
     window.addEventListener('keydown', this._onKeyDown);
@@ -34,7 +36,8 @@ class SceneResultBroadcast {
     const keyProgress = Math.min(1, this.keyPressCount / this.requiredCount);
     this.tapProgressBar.style.width = `${keyProgress * 100}%`;
 
-    if (elapsed >= this.timeLimit) {
+    if (elapsed >= this.timeLimit && !this.hasHandledResult) {
+      this.hasHandledResult = true;
       if (this.keyPressCount >= this.requiredCount) {
         this.sceneManager.transitionTo('victory');
       } else {
