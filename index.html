@@ -3,8 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>대선 게임</title>
+  <title>선거 시뮬레이터</title>
   <link rel="stylesheet" href="styles/styles.css" />
+  
+  <!-- Import Map: 'three'를 CDN URL로 매핑 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+      "three/": "https://unpkg.com/three@0.128.0/"
+    }
+  }
+  </script>
 </head>
 <body>
   <!-- Three.js 렌더러가 붙을 캔버스 -->
