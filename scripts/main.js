@@ -4,6 +4,11 @@
  */
 import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
 import SceneIntro from './scripts/scenes/SceneIntro.js';
+import SceneManager from './scripts/SceneManager.js';
+import SceneMenu from './scripts/scenes/SceneMenu.js';
+import SceneVotingBooth from './scripts/scenes/SceneVotingBooth.js';
+import SceneTVCount from './scripts/scenes/SceneTVCount.js';
+import SceneCandidateCamp from './scripts/scenes/SceneCandidateCamp.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   // 1) 렌더러 생성

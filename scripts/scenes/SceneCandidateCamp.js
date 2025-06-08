@@ -3,7 +3,9 @@
  * - 후보 경로를 선택했을 때 보여줄 씬(예: 캠페인장, 연설 무대 등)
  * - 현재는 자리만 표시해 두었습니다. 필요에 따라 3D 모델, 맵, 캠페인 인터랙션 등을 추가하세요.
  */
-class SceneCandidateCamp {
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+export default class SceneCandidateCamp  {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;

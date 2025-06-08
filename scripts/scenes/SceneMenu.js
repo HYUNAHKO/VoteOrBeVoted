@@ -3,7 +3,9 @@
  * - 첫 번째 화면: “유권자” 또는 “대통령 후보” 선택 UI
  * - HTML 오버레이(#menu-overlay)를 생성하고, 버튼 클릭 시 SceneManager로 전환 요청
  */
-class SceneMenu {
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+export default class SceneMenu {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;

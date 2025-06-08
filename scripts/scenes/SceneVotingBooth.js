@@ -3,7 +3,9 @@
  * - 유권자 경로 진입 후 보게 되는 투표소 씬
  * - 투표소 예시를 SceneMenu 패턴에 맞춰 감쌌습니다.
  */
-class SceneVotingBooth {
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+export default class SceneVotingBooth {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;

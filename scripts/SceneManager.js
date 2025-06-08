@@ -2,7 +2,7 @@
  * SceneManager.js
  * - 여러 씬(Three.js Scene)을 등록하고 전환하며 관리한다.
  */
-class SceneManager {
+export default class SceneManager  {
   constructor(renderer, camera) {
     this.renderer = renderer;
     this.camera = camera;

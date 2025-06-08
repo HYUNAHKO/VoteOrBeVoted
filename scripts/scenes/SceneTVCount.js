@@ -3,7 +3,9 @@
  * - 유권자 경로: 투표소 씬에서 “다음”을 눌러 넘어오는,
  *   TV 보면서 개표 결과를 확인하는 씬 예시
  */
-class SceneTVCount {
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+export default class SceneTVCount {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;
