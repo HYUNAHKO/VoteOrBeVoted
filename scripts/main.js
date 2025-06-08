@@ -28,6 +28,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // 3) SceneManager 생성
   const sceneManager = new SceneManager(renderer, camera);
+  
+  // 🎯 전역 변수로 노출 (디버깅용)
+  window.sceneManager = sceneManager;
+  window.THREE = THREE; // THREE.js도 전역에 노출
 
   // 4) 씬 인스턴스 생성 및 등록
   const introScene = new SceneIntro(renderer, camera, sceneManager);
@@ -42,11 +46,11 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
 
-  // 5) 최초 씬 설정: 인트로 화면
-  sceneManager.transitionTo('intro');
-
-  // 6) 렌더링 루프 호출
+  // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
+
+  // 6) 최초 씬 설정: 인트로 화면
+  sceneManager.transitionTo('intro');
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {
@@ -54,4 +58,6 @@ window.addEventListener('DOMContentLoaded', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
+
+  console.log('SceneManager initialized:', sceneManager);
 });

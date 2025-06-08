@@ -38,11 +38,25 @@ export default class SceneManager  {
   /** 매 프레임마다 호출 */
   renderLoop() {
     requestAnimationFrame(() => this.renderLoop());
-    if (this.current && this.current.update) {
-      this.current.update();
-    }
-    if (this.current && this.current.render) {
+    
+    if (this.current) {
+      // 1. 씬의 update 메서드 호출 (VideoTexture 업데이트 등)
+      if (this.current.update) {
+        this.current.update();
+      }
+      
+      // 2. 씬의 render 메서드 호출 (setClearColor 등)
+      if (this.current.render) {
+        this.current.render();
+      }
+      
+      // 3. Three.js 렌더링 실행
       this.renderer.render(this.current.scene, this.camera);
     }
+  }
+
+  /** SceneManager 시작 (renderLoop 시작) */
+  start() {
+    this.renderLoop();
   }
 }
