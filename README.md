@@ -113,12 +113,6 @@
 - 슬라이드가 끝나면 "시작하기" 버튼으로 투표소 씬으로 이동합니다.
 ---
 
-### scripts/scenes/SceneMenu.js
-- 유권자/후보 선택 메뉴 UI를 구현한 씬입니다.
-- 버튼 클릭 시 `SceneManager`를 통해 다음 씬으로 전환합니다.
-
----
-
 ### scripts/scenes/SceneVotingBooth.js
 - 투표소 씬을 위한 로직이 담긴 모듈입니다.
 - 내부 3D 오브젝트 배치 및 간단한 투표 인터랙션을 포함합니다.
@@ -128,12 +122,6 @@
 ### scripts/scenes/SceneTVCount.js
 - 투표소 씬 다음 단계인 개표 화면을 구현합니다.
 - Plane + 동영상 텍스처 또는 실시간 결과 UI가 포함됩니다.
-
----
-
-### scripts/scenes/SceneCandidateCamp.js
-- 후보 캠프 씬을 위한 기본 모듈입니다.
-- 3D 공간에 캠프 구조를 배치하며, 향후 토론/캠페인 기능 확장을 고려한 구조입니다.
 
 ---
 
