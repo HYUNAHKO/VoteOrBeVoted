@@ -329,7 +329,7 @@ export default class SceneHome {
     if (!this.phoneUI) {
       const container = document.createElement('div');
       Object.assign(container.style, {
-        width: '500px', height: '750px', padding: '20px', 
+        width: '500px', height: '650px', padding: '15px', 
         background: 'rgba(255,255,255,0.95)',
         color: '#222', pointerEvents: 'auto', borderRadius: '15px', 
         fontFamily: 'Malgun Gothic, sans-serif',
@@ -663,7 +663,7 @@ export default class SceneHome {
 
       this.warningUI = new CSS2DObject(warningContainer);
       // 핸드폰 UI 옆에 배치 (오른쪽으로 이동)
-      this.warningUI.position.set(4.0, 1, 0); // phoneUI보다 오른쪽에 배치
+      this.warningUI.position.set(25.0, 1, 0); // phoneUI보다 오른쪽에 배치
       this.phoneModel.add(this.warningUI);
     }
     
@@ -750,7 +750,7 @@ export default class SceneHome {
       }
       
       // 🚨 비방 댓글 체크 (더 정확한 체크)
-      const badWords = ['비방', '욕설', '인신공격', '거짓말쟁이', '무능한', '바보'];
+      const badWords = ['비방', '욕설', '인신공격', '거짓말쟁이', '무능한', '바보', '멍청이', '쓰레기', '개새끼', '병신'];
       const hasBadWord = badWords.some(word => text.includes(word));
       
       if (hasBadWord) {
