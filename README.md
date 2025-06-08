@@ -51,7 +51,6 @@
 │   │
 │   └─ scenes/
 │       ├─ SceneIntro.js          ← 인트로 슬라이드 씬
-│       ├─ SceneMenu.js           ← 첫 화면 (유권자 or 후보 선택)
 │       ├─ voter/                 ← 유권자 경로 관련 씬 모음
 │       │   ├─ SceneVoterRally.js
 │       │   ├─ SceneVoterPolicySearch.js
@@ -61,7 +60,6 @@
 │       │   └─ ...
 │       ├─ SceneVotingBooth.js    ← 기본 투표소 씬 예시
 │       ├─ SceneTVCount.js        ← TV 보면서 개표 씬
-│       └─ SceneCandidateCamp.js  ← 후보 캠프 기본 씬
 
 │
 ├─ assets/
