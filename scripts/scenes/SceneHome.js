@@ -1,4 +1,4 @@
-// SceneHome.js - 기존 구조에 맞춘 최소 수정 + 이동 조작 + 핸드폰 상호작용
+// SceneHome.js 
 import * as THREE from 'three';
 import { envModelLoader } from '../utils/processImport.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
@@ -9,31 +9,26 @@ export default class SceneHome {
     this.camera = camera;
     this.sceneManager = sceneManager;
     this.scene = new THREE.Scene();
-    this.mixer = null;
-    this.manualStartPosition = null;
-
-
-    // 리스폰 관련 변수 
-    this.shouldRespawn = false;
     
-    // CSS2DRenderer 세팅
-    this.labelRenderer = new CSS2DRenderer();
-    this.labelRenderer.domElement.style.position = 'absolute';
-    this.labelRenderer.domElement.style.top = '0';
-    this.labelRenderer.domElement.style.left = '0';
-    this.labelRenderer.domElement.style.width = '100%';
-    this.labelRenderer.domElement.style.height = '100%';
-    this.labelRenderer.domElement.style.pointerEvents = 'none'; // 기본은 none
-    this.labelRenderer.domElement.style.zIndex = '1000';
-    document.body.appendChild(this.labelRenderer.domElement);
-
-    this.assetsLoaded = false;
+    // 초기화 상태 추적
+    this.initialized = false;
+    
+    // 무거운 객체들을 나중에 생성
+    this.mixer = null;
+    this.labelRenderer = null;
+    this.textOverlay = null;
     this.bedroomModel = null;
     this.phoneModel = null;
-    this.phoneUI = null; // CSS2DObject
+    this.phoneUI = null;
     this.warningUI = null;
-
-    // 이동 조작을 위한 변수들
+    
+    // 가벼운 상태 변수들만 초기화
+    this.manualStartPosition = null;
+    this.shouldRespawn = false;
+    this.assetsLoaded = false;
+    this.phoneGlow = null;
+    
+    // 이동 조작 변수들 (가벼움)
     this.moveForward = false;
     this.moveBackward = false;
     this.moveLeft = false;
@@ -41,78 +36,105 @@ export default class SceneHome {
     this.canLook = false;
     this.prevMouseX = 0;
     this.prevMouseY = 0;
-
-    // 카메라 회전을 위한 별도 변수 (더 안정적인 제어)
-    this.cameraYaw = 0;    // 좌우 회전
-    this.cameraPitch = 0;  // 상하 회전
+    this.cameraYaw = 0;
+    this.cameraPitch = 0;
     
-    // 방 정보 (에셋 로딩 후 설정됨)
+    // 방 정보 (나중에 설정)
     this.roomInfo = null;
-    this.phoneGlow = null;
-
-    this._init();
+    
+    // 이벤트 리스너 함수들 미리 바인딩 (가벼운 작업)
+    this._setupControlFunctions();
+    
+    console.log('SceneHome constructor completed (lightweight)');
   }
 
+  // 무거운 초기화 작업들 (onEnter에서만 실행)
   _init() {
+    console.log('🏠 SceneHome 무거운 초기화 시작...');
+    
     THREE.ColorManagement.enabled = true;
-
-    this.renderer.outputColorSpace    = THREE.SRGBColorSpace;
-    this.renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
+    // 1) CSS2DRenderer 생성 (무거운 작업)
+    this._createLabelRenderer();
     
-    // 1) 배경 
+    // 2) 배경 설정
     this.scene.background = new THREE.Color(0x1a1a1a);
     
-    // 2) 기본 조명만 (에셋 로드 전)
+    // 3) 기본 조명 설정
     this._setupBasicLighting();
     
-    // 3) 텍스트 오버레이
+    // 4) 텍스트 오버레이 생성 (DOM 조작)
     this._createTextOverlay();
     
-    // 4) 실제 다운로드받은 에셋 로드
-    envModelLoader.loadEnvironmentModel(
-          'bedroom',
-          [ './assets/models/bedroom.glb' ],
-          this.scene,
-          (modelRoot) => {
-            // 로딩 성공 시 호출되는 콜백
-            this.bedroomModel = modelRoot;
-            this._afterLoad();
-          },
-          undefined,
-          (err) => console.error(err)
-        );
+    // 5) 3D 모델 로딩 (가장 무거운 작업)
+    this._loadBedroomModel();
+    
+    console.log('✅ SceneHome 초기화 완료');
   }
 
-  
+  _createLabelRenderer() {
+    this.labelRenderer = new CSS2DRenderer();
+    this.labelRenderer.domElement.style.position = 'absolute';
+    this.labelRenderer.domElement.style.top = '0';
+    this.labelRenderer.domElement.style.left = '0';
+    this.labelRenderer.domElement.style.width = '100%';
+    this.labelRenderer.domElement.style.height = '100%';
+    this.labelRenderer.domElement.style.pointerEvents = 'none';
+    this.labelRenderer.domElement.style.zIndex = '1000';
+    document.body.appendChild(this.labelRenderer.domElement);
+    
+    console.log('📱 CSS2DRenderer 생성 완료');
+  }
+
+  _loadBedroomModel() {
+    console.log('🏠 침실 모델 로딩 시작...');
+    
+    envModelLoader.loadEnvironmentModel(
+      'bedroom',
+      ['./assets/models/bedroom.glb'],
+      this.scene,
+      (modelRoot) => {
+        // 로딩 성공 시 호출되는 콜백
+        this.bedroomModel = modelRoot;
+        this._afterLoad();
+        console.log('✅ 침실 모델 로딩 완료');
+      },
+      undefined,
+      (err) => {
+        console.error('❌ 침실 모델 로딩 실패:', err);
+      }
+    );
+  }
+
   _afterLoad() {
-  // 디버그용으로 맵 정보 출력
-  this.bedroomModel.traverse(child => {
-    if (child.isMesh) {
-      console.log(
-        `[DBG] Mesh "${child.name}" → map:`,
-        child.material.map,
-        ', emissiveMap:',
-        child.material.emissiveMap
-      );
-    }
-  });
+    // 디버그용으로 맵 정보 출력
+    this.bedroomModel.traverse(child => {
+      if (child.isMesh) {
+        console.log(
+          `[DBG] Mesh "${child.name}" → map:`,
+          child.material.map,
+          ', emissiveMap:',
+          child.material.emissiveMap
+        );
+      }
+    });
 
-  // sRGB 인코딩 강제 설정
-  this.bedroomModel.traverse(child => {
-    if (child.isMesh && child.material.map) {
-      child.material.map.encoding = THREE.sRGBEncoding;
-      child.material.needsUpdate = true;
-    }
-  });
+    // sRGB 인코딩 강제 설정
+    this.bedroomModel.traverse(child => {
+      if (child.isMesh && child.material.map) {
+        child.material.map.encoding = THREE.sRGBEncoding;
+        child.material.needsUpdate = true;
+      }
+    });
 
-  // 기존 환경 셋업 호출
-  this._adjustEnvironmentForAsset();
-  this._autoPositionCameraInside();
-  this.assetsLoaded = true;
- }
-
+    // 기존 환경 셋업 호출
+    this._adjustEnvironmentForAsset();
+    this._autoPositionCameraInside();
+    this.assetsLoaded = true;
+  }
 
   _optimizeLoadedAsset() {
     if (!this.bedroomModel) return;
@@ -143,17 +165,17 @@ export default class SceneHome {
     // 기존 조명 제거
     const lightsToRemove = [];
     this.scene.traverse((child) => {
-        if (child.isLight) {
-            lightsToRemove.push(child);
-        }
+      if (child.isLight) {
+        lightsToRemove.push(child);
+      }
     });
     lightsToRemove.forEach(light => this.scene.remove(light));
     
     // 훨씬 더 밝은 조명 설정
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // 더 밝게
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     this.scene.add(ambientLight);
     
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); // 더 밝게
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
     mainLight.position.set(5, 10, 5);
     mainLight.castShadow = true;
     this.scene.add(mainLight);
@@ -166,6 +188,7 @@ export default class SceneHome {
     const fillLight2 = new THREE.PointLight(0xffffff, 0.8, 20);
     fillLight2.position.set(5, 5, -5);
     this.scene.add(fillLight2);
+    
     // 환경광
     const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
     this.scene.add(hemi);
@@ -174,31 +197,31 @@ export default class SceneHome {
     this.scene.background = new THREE.Color(0xffffff);
     
     console.log('✅ 환경 조명 설정 완료');
-}
+  }
 
   // 방 내부에 카메라 자동 배치
   _autoPositionCameraInside() {
     // 1) 메시만 모아서 정제된 바운딩박스 계산
     const box = new THREE.Box3();
     this.bedroomModel.traverse(child => {
-        if (child.isMesh && child.geometry) {
+      if (child.isMesh && child.geometry) {
         child.geometry.computeBoundingBox();
         const geomBox = child.geometry.boundingBox.clone();
         geomBox.applyMatrix4(child.matrixWorld);
         box.union(geomBox);
-        }
+      }
     });
 
     // 2) 박스에서 중심(center)과 크기(size) 구하기
     const center = box.getCenter(new THREE.Vector3());
-    const size   = box.getSize(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
     console.log('🏠 정제된 방 바운딩:', box.min, box.max);
 
     // 3) 수동 시작 위치로 덮어쓰기
     const manualStart = new THREE.Vector3(104.98, 50, 499.92);
     this.camera.position.copy(manualStart);
     this.camera.lookAt(center);
-    this.cameraYaw   = 0;
+    this.cameraYaw = 0;
     this.cameraPitch = 0;
 
     // 4) roomInfo 갱신
@@ -242,29 +265,39 @@ export default class SceneHome {
         🎮 WASD로 이동 + 우클릭 드래그로 시점 변경
       </div>
     `;
+    
+    console.log('📝 텍스트 오버레이 생성 완료');
   }
 
-  // 기존 구조에 맞춘 onEnter 메서드
+  // onEnter에서 무거운 초기화 실행
   onEnter() {
     console.log('SceneHome onEnter');
 
+    // 한 번만 초기화
+    if (!this.initialized) {
+      this._init();
+      this.initialized = true;
+    }
+
     // 1) 초기 로딩 전 기본 위치 세팅
     if (!this.assetsLoaded) {
-        this.camera.position.set(0, 2, 8);
-        this.camera.rotation.set(0, 0, 0);
-        this.camera.lookAt(0, 1, 0);
-        this.camera.updateProjectionMatrix();
+      this.camera.position.set(0, 2, 8);
+      this.camera.rotation.set(0, 0, 0);
+      this.camera.lookAt(0, 1, 0);
+      this.camera.updateProjectionMatrix();
     }
     this.cameraYaw = 0;
     this.cameraPitch = 0;
 
     // 2) 조작 이벤트 등록, UI 추가 등
     this._setupControls();
-    document.body.appendChild(this.textOverlay);
+    if (this.textOverlay) {
+      document.body.appendChild(this.textOverlay);
+    }
 
     // 3) 에셋 로딩 완료 후 강제 수동 위치 재적용
     const startScene = () => {
-        if (this.assetsLoaded) {
+      if (this.assetsLoaded) {
         console.log('📷 방 내부 카메라 배치 완료 (자동 & 수동 적용)');
         // 핸드폰 추가
         this._addPhoneToDesk();
@@ -277,13 +310,12 @@ export default class SceneHome {
         // 텍스트 페이드인/out 등
         setTimeout(() => this.textOverlay.style.opacity = '1', 800);
         setTimeout(() => this.textOverlay.style.opacity = '0', 5000);
-        } else {
+      } else {
         setTimeout(startScene, 100);
-        }
+      }
     };
     startScene();
-    }
-
+  }
 
   // 기존 구조에 맞춘 onExit 메서드
   onExit() {
@@ -294,8 +326,91 @@ export default class SceneHome {
       this.textOverlay.parentNode.removeChild(this.textOverlay);
     }
     this._hideWarningUI();
+    
     // 이동 조작 이벤트 제거
     this._removeControls();
+  }
+
+  // 이벤트 리스너 함수들 미리 정의 (가벼운 작업)
+  _setupControlFunctions() {
+    // 키보드 이벤트
+    this.onKeyDown = (event) => {
+      switch(event.code) {
+        case 'KeyW': case 'ArrowUp':
+          this.moveForward = true;
+          break;
+        case 'KeyS': case 'ArrowDown':
+          this.moveBackward = true;
+          break;
+        case 'KeyA': case 'ArrowLeft':
+          this.moveLeft = true;
+          break;
+        case 'KeyD': case 'ArrowRight':
+          this.moveRight = true;
+          break;
+      }
+    };
+    
+    this.onKeyUp = (event) => {
+      switch(event.code) {
+        case 'KeyW': case 'ArrowUp':
+          this.moveForward = false;
+          break;
+        case 'KeyS': case 'ArrowDown':
+          this.moveBackward = false;
+          break;
+        case 'KeyA': case 'ArrowLeft':
+          this.moveLeft = false;
+          break;
+        case 'KeyD': case 'ArrowRight':
+          this.moveRight = false;
+          break;
+      }
+    };
+    
+    // 마우스 이벤트 (우클릭으로 시점 변경)
+    this.onMouseDown = (event) => {
+      if (event.button === 2) { // 우클릭
+        this.canLook = true;
+        this.prevMouseX = event.clientX;
+        this.prevMouseY = event.clientY;
+        document.body.style.cursor = 'grab';
+      }
+    };
+    
+    this.onMouseUp = (event) => {
+      if (event.button === 2) {
+        this.canLook = false;
+        document.body.style.cursor = 'default';
+      }
+    };
+    
+    this.onMouseMove = (event) => {
+      if (this.canLook) {
+        const deltaX = event.clientX - this.prevMouseX;
+        const deltaY = event.clientY - this.prevMouseY;
+        
+        // yaw/pitch 변수로 회전 관리
+        this.cameraYaw -= deltaX * 0.002;
+        this.cameraPitch -= deltaY * 0.002;
+        
+        // 상하 시점 제한
+        this.cameraPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.cameraPitch));
+        
+        // 카메라 회전 적용
+        this._updateCameraRotation();
+        
+        this.prevMouseX = event.clientX;
+        this.prevMouseY = event.clientY;
+      }
+    };
+    
+    // 클릭 이벤트 (핸드폰 상호작용)
+    this.onMouseClick = (event) => {
+      if (event.button === 0 && this.phoneModel) { // 좌클릭
+        this._checkPhoneClick(event);
+      }
+    };
   }
 
   // 3D 위에 HTML 패널 띄우기
@@ -419,9 +534,10 @@ export default class SceneHome {
         
         // 2) 동시에 Warning UI도 띄우기
         setTimeout(() => {
-            this._showWarningUI();
-        }, 100); // 살짝 딜레이를 주어 안정적으로 생성
-        });
+          this._showWarningUI();
+        }, 100);
+      });
+      
       // 투표일 선택
       container.querySelector('#go-vote').addEventListener('click', () => this._showVoteDayChoice(container));
 
@@ -439,12 +555,13 @@ export default class SceneHome {
       <button id="back-cand" style="margin-top:12px;padding:8px;background:#aaa;color:#fff;border:none;border-radius:4px;cursor:pointer;">뒤로</button>
     `;
     container.querySelector('#back-cand').onclick = () => {
-        // 기존 UI 제거 후 다시 생성
-        this.phoneModel.remove(this.phoneUI);
-        this.phoneUI = null;
-        this._showPhoneUI();
-      };
+      // 기존 UI 제거 후 다시 생성
+      this.phoneModel.remove(this.phoneUI);
+      this.phoneUI = null;
+      this._showPhoneUI();
+    };
   }
+
   _showWarningUI() {
     if (!this.warningUI) {
       const warningContainer = document.createElement('div');
@@ -460,8 +577,8 @@ export default class SceneHome {
         fontSize: '15px', 
         boxShadow: '0 16px 32px rgba(0,0,0,0.5)', 
         overflow: 'hidden', 
-        zIndex: '1001', // phoneUI보다 높게
-        border: '3px solid #e74c3c', // 경고 색상
+        zIndex: '1001',
+        border: '3px solid #e74c3c',
         position: 'relative'
       });
       
@@ -490,11 +607,6 @@ export default class SceneHome {
       warningContainer.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
           <h2 style="margin:0; color:#e74c3c; font-size:22px;">⚖️ 선거 비방 처벌 안내</h2>
-          <button id="close-warning" style="
-            background:#e74c3c; color:#fff; border:none; 
-            border-radius:50%; width:32px; height:32px; 
-            cursor:pointer; font-size:18px; font-weight:bold;
-          ">×</button>
         </div>
 
         <div id="warning-content" style="
@@ -589,22 +701,16 @@ export default class SceneHome {
         </div>
       `;
 
-    // X 버튼을 컨테이너에 추가
-    warningContainer.appendChild(closeButton);
+      warningContainer.appendChild(closeButton);
 
-    closeButton.addEventListener('click', (e) => {
+      closeButton.addEventListener('click', (e) => {
         console.log('❌ X 버튼 클릭 이벤트 발생!');
         e.preventDefault();
         e.stopPropagation();
-        
-        // 즉시 실행
-        setTimeout(() => {
-        console.log('🔧 _hideWarningUI 실행 중...');
         this._hideWarningUI();
-        }, 0);
-    });
+      });
 
-    // 🔧 추가 안전장치 - mousedown으로도 처리
+    // 추가 안전장치 - mousedown으로도 처리
     closeButton.addEventListener('mousedown', (e) => {
         console.log('❌ X 버튼 mousedown 이벤트!');
         e.preventDefault();
@@ -636,8 +742,7 @@ export default class SceneHome {
       }
 
       this.warningUI = new CSS2DObject(warningContainer);
-      // 핸드폰 UI 옆에 배치 (오른쪽으로 이동)
-      this.warningUI.position.set(25.0, 1, 0); // phoneUI보다 오른쪽에 배치
+      this.warningUI.position.set(25.0, 1, 0);
       this.phoneModel.add(this.warningUI);
     }
     
@@ -645,14 +750,13 @@ export default class SceneHome {
     console.log('⚖️ 비방 처벌 안내 UI 표시');
   }
 
-  // 🔧 비방 처벌 안내 UI 숨기기
   _hideWarningUI() {
     if (this.warningUI) {
       this.warningUI.element.style.display = 'none';
       console.log('⚖️ 비방 처벌 안내 UI 숨김');
     }
 
-    if (this.phoneModel && this.warningUI.parent === this.phoneModel) {
+    if (this.phoneModel && this.warningUI && this.warningUI.parent === this.phoneModel) {
       this.phoneModel.remove(this.warningUI);
       console.log('🔧 phoneModel에서 warningUI 제거 완료');
     }
@@ -840,99 +944,19 @@ export default class SceneHome {
       <button id="main" style="width:100%;padding:10px;margin:8px 0;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;">본 투표일</button>
       <button id="back-vote" style="margin-top:12px;padding:8px;background:#aaa;color:#fff;border:none;border-radius:4px;cursor:pointer;">뒤로</button>
     `;
-    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 --------------------------------------------------------------------------------------
+    
     container.querySelector('#early').onclick = () => this.sceneManager.transitionTo('earlyVote');
     container.querySelector('#main').onclick = () => this.sceneManager.transitionTo('mainVote');
-    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 --------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 -------------------------------------------------------------------
     container.querySelector('#back-vote').onclick = () => {
-        this.phoneModel.remove(this.phoneUI);
-        this.phoneUI = null;
-        this._showPhoneUI();
-      };
+      this.phoneModel.remove(this.phoneUI);
+      this.phoneUI = null;
+      this._showPhoneUI();
+    };
   }
 
   // 이동 조작 설정
   _setupControls() {
-    // 키보드 이벤트
-    this.onKeyDown = (event) => {
-      switch(event.code) {
-        case 'KeyW': case 'ArrowUp':
-          this.moveForward = true;
-          break;
-        case 'KeyS': case 'ArrowDown':
-          this.moveBackward = true;
-          break;
-        case 'KeyA': case 'ArrowLeft':
-          this.moveLeft = true;
-          break;
-        case 'KeyD': case 'ArrowRight':
-          this.moveRight = true;
-          break;
-          
-      }
-    };
-    
-    this.onKeyUp = (event) => {
-      switch(event.code) {
-        case 'KeyW': case 'ArrowUp':
-          this.moveForward = false;
-          break;
-        case 'KeyS': case 'ArrowDown':
-          this.moveBackward = false;
-          break;
-        case 'KeyA': case 'ArrowLeft':
-          this.moveLeft = false;
-          break;
-        case 'KeyD': case 'ArrowRight':
-          this.moveRight = false;
-          break;
-      }
-    };
-    
-    // 마우스 이벤트 (우클릭으로 시점 변경)
-    this.onMouseDown = (event) => {
-      if (event.button === 2) { // 우클릭
-        this.canLook = true;
-        this.prevMouseX = event.clientX;
-        this.prevMouseY = event.clientY;
-        document.body.style.cursor = 'grab';
-      }
-    };
-    
-    this.onMouseUp = (event) => {
-      if (event.button === 2) {
-        this.canLook = false;
-        document.body.style.cursor = 'default';
-      }
-    };
-    
-    this.onMouseMove = (event) => {
-      if (this.canLook) {
-        const deltaX = event.clientX - this.prevMouseX;
-        const deltaY = event.clientY - this.prevMouseY;
-        
-        // yaw/pitch 변수로 회전 관리
-        this.cameraYaw -= deltaX * 0.002;
-        this.cameraPitch -= deltaY * 0.002;
-        
-        // 상하 시점 제한
-        this.cameraPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.cameraPitch));
-        
-        // 카메라 회전 적용
-        this._updateCameraRotation();
-        
-        this.prevMouseX = event.clientX;
-        this.prevMouseY = event.clientY;
-      }
-    };
-    
-    // 클릭 이벤트 (핸드폰 상호작용)
-    this.onMouseClick = (event) => {
-      if (event.button === 0 && this.phoneModel) { // 좌클릭
-        this._checkPhoneClick(event);
-      }
-    };
-    
     // 이벤트 등록
     document.addEventListener('keydown', this.onKeyDown);
     document.addEventListener('keyup', this.onKeyUp);
@@ -943,7 +967,6 @@ export default class SceneHome {
     
     // 우클릭 메뉴 비활성화
     document.addEventListener('contextmenu', (e) => e.preventDefault());
-    
   }
 
   _removeControls() {
@@ -958,7 +981,7 @@ export default class SceneHome {
     document.body.style.cursor = 'default';
   }
 
-  // 기존 구조에 맞춘 update 메서드
+  // 기존 update, render, 기타 메서드들은 모두 동일...
   update() {
     // 이동 처리
     this._handleMovement();
@@ -1025,7 +1048,7 @@ export default class SceneHome {
       this.camera.position.add(movement);
       
       // 이동할 때마다 위치 출력 (디버깅용)
-      if (Date.now() % 500 < 16) { // 0.5초마다 한 번씩만 출력
+      if (Date.now() % 500 < 16) {
         console.log('🚶 현재 위치:', {
           x: Math.round(this.camera.position.x * 100) / 100,
           y: Math.round(this.camera.position.y * 100) / 100,
@@ -1035,7 +1058,7 @@ export default class SceneHome {
     }
   }
 
-  // 카메라 회전 업데이트 (새 함수 추가)
+  // 카메라 회전 업데이트
   _updateCameraRotation() {
     // yaw와 pitch를 사용해서 카메라가 바라볼 방향 계산
     const lookDirection = new THREE.Vector3(
@@ -1056,8 +1079,8 @@ export default class SceneHome {
     // 폰 모델 생성 (박스 형태)
     const phoneGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.01);
     const phoneMaterial = new THREE.MeshPhongMaterial({
-        color: 0x2c2c2c,
-        shininess: 100
+      color: 0x2c2c2c,
+      shininess: 100
     });
     this.phoneModel = new THREE.Mesh(phoneGeometry, phoneMaterial);
 
@@ -1082,9 +1105,9 @@ export default class SceneHome {
     const glowRadius = 0.5;
     const glowGeometry = new THREE.SphereGeometry(glowRadius, 8, 8);
     const glowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ff88,
-        transparent: true,
-        opacity: 0.2
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.2
     });
     const glow = new THREE.Mesh(glowGeometry, glowMaterial);
     // 폰 스케일에 맞춰 글로우도 스케일링
@@ -1092,47 +1115,74 @@ export default class SceneHome {
     glow.position.copy(manualPhonePos);
     this.scene.add(glow);
     this.phoneGlow = glow;
-    }
+  }
 
   // 핸드폰 클릭 체크
   _checkPhoneClick(event) {
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2(
-    (event.clientX / window.innerWidth) * 2 - 1,
-    -(event.clientY / window.innerHeight) * 2 + 1
-  );
-  raycaster.setFromCamera(mouse, this.camera);
-  const intersects = raycaster.intersectObject(this.phoneModel);
-  if (intersects.length > 0) {
-    console.log('📱 핸드폰 클릭됨!');
+    if (!this.phoneModel) return;
     
-    // 클릭 시 Emissive 효과 
-    this.phoneModel.material.emissive.setHex(0x444444);
-    setTimeout(() => {
-      this.phoneModel.material.emissive.setHex(0x000000);
-    }, 200);
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+    raycaster.setFromCamera(mouse, this.camera);
+    const intersects = raycaster.intersectObject(this.phoneModel);
     
-    // 화면 전환 대신 UI 띄우기
-    this._showPhoneUI();
+    if (intersects.length > 0) {
+      console.log('📱 핸드폰 클릭됨!');
+      
+      // 클릭 시 Emissive 효과 
+      this.phoneModel.material.emissive.setHex(0x444444);
+      setTimeout(() => {
+        this.phoneModel.material.emissive.setHex(0x000000);
+      }, 200);
+      
+      // 화면 전환 대신 UI 띄우기
+      this._showPhoneUI();
+    }
   }
-}
 
-  // 기존 구조에 맞춘 render 메서드
+  // 렌더링
   render() {
     // 배경색 설정 등
     this.renderer.setClearColor(this.assetsLoaded ? 0xf8f8f8 : 0x1a1a1a);
-    // Warning UI 상태 확인
-    const hasWarningUI = this.warningUI && 
-                        this.warningUI.element && 
-                        this.warningUI.element.style.display !== 'none';
     
-    if (hasWarningUI) {
+    // CSS2DRenderer 처리
+    if (this.labelRenderer) {
+      // Warning UI 상태 확인
+      const hasWarningUI = this.warningUI && 
+                          this.warningUI.element && 
+                          this.warningUI.element.style.display !== 'none';
+      
+      if (hasWarningUI) {
         this.labelRenderer.domElement.style.pointerEvents = 'auto';
-    } else {
+      } else {
         this.labelRenderer.domElement.style.pointerEvents = 'none';
+      }
+      
+      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      this.labelRenderer.render(this.scene, this.camera);
     }
-    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    this.labelRenderer.render(this.scene, this.camera);
   }
 
+  // 메모리 정리
+  dispose() {
+    // CSS2DRenderer 정리
+    if (this.labelRenderer && this.labelRenderer.domElement.parentNode) {
+      this.labelRenderer.domElement.parentNode.removeChild(this.labelRenderer.domElement);
+    }
+    
+    // UI 요소들 정리
+    if (this.textOverlay && this.textOverlay.parentNode) {
+      this.textOverlay.parentNode.removeChild(this.textOverlay);
+    }
+    
+    // Three.js 객체들 정리
+    if (this.scene) {
+      this.scene.clear();
+    }
+    
+    console.log('SceneHome disposed');
+  }
 }

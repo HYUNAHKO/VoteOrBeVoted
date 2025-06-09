@@ -8,7 +8,10 @@ export default class SceneReturnHome {
         this.sceneManager = sceneManager;
         this.scene = new THREE.Scene();
         
-        // 이동 및 인터랙션 시스템
+        // 초기화 상태 추적
+        this.initialized = false;
+        
+        // 이동 및 인터랙션 시스템 (가벼운 초기화만)
         this.keys = { w: false, a: false, s: false, d: false };
         this.moveSpeed = 0.3;
         this.wallPosterObject = null;
@@ -16,15 +19,15 @@ export default class SceneReturnHome {
         this.originalMaterial = null;
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
-        this.interactionDistance = 70; // 상호작용 가능한 최대 거리
+        this.interactionDistance = 70;
         
         // 카메라 회전 시스템
         this.isRotating = false;
         this.previousMousePosition = { x: 0, y: 0 };
-        this.cameraRotation = { horizontal: 0, vertical: 0 }; // 현재 회전 각도
+        this.cameraRotation = { horizontal: 0, vertical: 0 };
         this.rotationLimits = {
-            horizontal: { min: -Math.PI / 3, max: Math.PI / 3 }, // ±60도
-            vertical: { min: -Math.PI / 6, max: Math.PI / 6 }     // ±30도
+            horizontal: { min: -Math.PI / 3, max: Math.PI / 3 },
+            vertical: { min: -Math.PI / 6, max: Math.PI / 6 }
         };
         this.rotationSpeed = 0.002;
         
@@ -35,17 +38,22 @@ export default class SceneReturnHome {
             opacity: 0.3 
         });
         
-        this._initScene();
-        this._createUI();
-        this._loadOutdoorModel();
-        this._setupEventListeners();
+        // UI 요소들 (나중에 생성)
+        this.hoverLabel = null;
+        this.modal = null;
+        this.floatingMessage = null;
+        
+        // 이벤트 리스너 함수들을 미리 바인딩 (이건 가벼워서 괜찮음)
+        this._setupEventListenerFunctions();
+        
+        console.log('SceneReturnHome constructor called (lightweight)');
     }
 
     // --------------------------
-    // 내부 초기화
+    // 무거운 초기화 작업들 (onEnter에서 호출)
     // --------------------------
     _initScene() {
-        // 기본 안개 설정 (조절 불가)
+        // 기본 안개 설정
         this.scene.fog = new THREE.FogExp2(0x856d71, 0.01);
         
         const rgbeLoader = new RGBELoader();
@@ -78,10 +86,7 @@ export default class SceneReturnHome {
         dirLight3.position.set(0, 10, -10);
         this.scene.add(dirLight3);
         
-        // 카메라 시작 위치 설정
-        this.camera.position.set(110, 10, 140);
-
-        console.log(THREE.REVISION);
+        console.log('Scene lighting and HDR initialized');
     }
 
     _createUI() {
@@ -148,8 +153,9 @@ export default class SceneReturnHome {
             (modelRoot) => {
                 // 성공 콜백: 모델이 로드되면 Wall_Poster 오브젝트를 찾아서 저장
                 this.wallPosterObject = envModelLoader.findObjectInModel('outdoor', 'Wall_Poster');
+                console.log('Outdoor model loaded successfully');
             },
-            null, // 진행 상황 콜백 (사용하지 않음)
+            null,
             (error) => {
                 // 에러 콜백
                 console.error('Outdoor model loading failed:', error);
@@ -157,8 +163,8 @@ export default class SceneReturnHome {
         );
     }
 
-    _setupEventListeners() {
-        // 키보드 이벤트
+    _setupEventListenerFunctions() {
+        // 이벤트 리스너 함수들만 정의 (실제 등록은 onEnter에서)
         this.onKeyDown = (event) => {
             const key = event.key.toLowerCase();
             if (key in this.keys) this.keys[key] = true;
@@ -228,11 +234,13 @@ export default class SceneReturnHome {
                         this.originalMaterial = obj.material;
                         obj.material = this.highlightMaterial;
                         
-                        // 호버 라벨 표시
-                        this.hoverLabel.textContent = "선거 벽보";
-                        this.hoverLabel.style.left = event.clientX + 10 + 'px';
-                        this.hoverLabel.style.top = event.clientY + 10 + 'px';
-                        this.hoverLabel.style.display = 'block';
+                        // 호버 라벨 표시 (UI가 생성된 경우에만)
+                        if (this.hoverLabel) {
+                            this.hoverLabel.textContent = "선거 벽보";
+                            this.hoverLabel.style.left = event.clientX + 10 + 'px';
+                            this.hoverLabel.style.top = event.clientY + 10 + 'px';
+                            this.hoverLabel.style.display = 'block';
+                        }
                         return;
                     }
                 } else {
@@ -241,8 +249,10 @@ export default class SceneReturnHome {
                 }
             }
             
-            // Wall_Poster가 아닌 곳에 마우스가 있거나 거리가 멀면 라벨 숨김
-            this.hoverLabel.style.display = 'none';
+            // 라벨 숨김 
+            if (this.hoverLabel) {
+                this.hoverLabel.style.display = 'none';
+            }
         };
 
         this.onMouseDown = (event) => {
@@ -292,6 +302,8 @@ export default class SceneReturnHome {
     }
 
     _showModal() {
+        if (!this.modal) return;
+        
         this.modal.innerHTML = `
             <p>선거 벽보가 붙어있다! 내가 좋아하는 후보에게 왠지 하트를 마구마구 그려주고 싶다. 벽보에 하트를 그릴까?</p>
             <button id="draw-heart">하트를 큼직하게 그린다.</button>
@@ -302,12 +314,12 @@ export default class SceneReturnHome {
         // 이벤트 리스너 등록
         document.getElementById('draw-heart').onclick = () => {
             this.modal.style.display = 'none';
-            this.sceneManager.transitionTo('SceneHome');
+            this.sceneManager.transitionTo('home'); // 씬 이름 수정
         };
         
         document.getElementById('pass-by').onclick = () => {
             this.modal.style.display = 'none';
-            this.sceneManager.transitionTo('SceneTVCount');
+            this.sceneManager.transitionTo('tvCount'); // 씬 이름 수정
         };
     }
 
@@ -332,20 +344,33 @@ export default class SceneReturnHome {
             
             // 이동 벡터 계산
             const movement = new THREE.Vector3();
-            movement.addScaledVector(cameraDirection, direction.z * this.moveSpeed);  // 앞뒤
-            movement.addScaledVector(right, direction.x * this.moveSpeed);           // 좌우
-            movement.y = 0; // Y축 이동 제한
+            movement.addScaledVector(cameraDirection, direction.z * this.moveSpeed);
+            movement.addScaledVector(right, direction.x * this.moveSpeed);
+            movement.y = 0;
             
             this.camera.position.add(movement);
         }
     }
 
-    // 씬 진입 시 호출
+    // 씬 진입 시 호출 
     onEnter() {
+        // 한 번만 초기화
+        if (!this.initialized) {
+            console.log('🎬 SceneReturnHome 초기화 시작...');
+            
+            // 무거운 작업들을 여기서 실행
+            this._initScene();
+            this._createUI();
+            this._loadOutdoorModel();
+            
+            this.initialized = true;
+            console.log('✅ SceneReturnHome 초기화 완료');
+        }
+        
         // 카메라 초기 위치 설정
         this.camera.position.set(-10, 10, 130);
         
-        // 이벤트 리스너 등록
+        // 이벤트 리스너 등록 (매번 입장할 때마다)
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
         window.addEventListener('mousemove', this.onMouseMove);
@@ -356,8 +381,6 @@ export default class SceneReturnHome {
         
         // UI 초기 상태 설정
         this._hideAllUI();
-        
-        // Floating 메시지 표시
         this._showFloatingMessage();
         
         // 5초 후 휴대폰 UI 표시
@@ -407,7 +430,6 @@ export default class SceneReturnHome {
     _showFloatingMessage() {
         if (this.floatingMessage) {
             this.floatingMessage.style.display = 'block';
-            // 5초 후 자동으로 숨김
             setTimeout(() => {
                 if (this.floatingMessage) {
                     this.floatingMessage.style.display = 'none';
@@ -451,15 +473,35 @@ export default class SceneReturnHome {
     }
 
     _applyCameraRotation() {
-        // 카메라의 현재 회전을 Euler 각도로 설정
         this.camera.rotation.set(
             this.cameraRotation.vertical,
             this.cameraRotation.horizontal,
             0,
-            'YXZ' // Y축 먼저 회전(좌우), 그 다음 X축 회전(위아래)
+            'YXZ'
         );
+    }
+
+    // 메모리 정리 (선택사항)
+    dispose() {
+        // UI 요소들 제거
+        if (this.hoverLabel && this.hoverLabel.parentNode) {
+            this.hoverLabel.parentNode.removeChild(this.hoverLabel);
+        }
+        if (this.modal && this.modal.parentNode) {
+            this.modal.parentNode.removeChild(this.modal);
+        }
+        if (this.floatingMessage && this.floatingMessage.parentNode) {
+            this.floatingMessage.parentNode.removeChild(this.floatingMessage);
+        }
+        
+        // Three.js 객체들 정리
+        if (this.scene) {
+            this.scene.clear();
+        }
+        
+        console.log('SceneReturnHome disposed');
     }
 }
 
-// window에 클래스 노출 (non-module 스크립트에서 접근 가능하도록)
+// window에 클래스 노출
 window.SceneReturnHome = SceneReturnHome;

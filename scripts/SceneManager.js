@@ -2,32 +2,52 @@
  * SceneManager.js
  * - 여러 씬(Three.js Scene)을 등록하고 전환하며 관리한다.
  */
-export default class SceneManager  {
+export default class SceneManager {
   constructor(renderer, camera) {
     this.renderer = renderer;
     this.camera = camera;
-    this.scenes = {};
-    this.current = null; // 현재 활성 씬 객체
+    this.sceneFactories = {}; // 팩토리 함수들 저장
+    this.sceneInstances = {}; // 생성된 인스턴스들 저장
+    this.current = null;
   }
 
-  /** 씬 등록 */
-  addScene(name, sceneInstance) {
-    this.scenes[name] = sceneInstance;
+  /** 씬 팩토리 등록 */
+  addScene(name, sceneFactory) {
+    this.sceneFactories[name] = sceneFactory;
   }
 
-  /** 씬 전환 (fade 효과 포함) */
+  /** 씬 가져오기  */
+  getScene(name) {
+    // 이미 생성된 인스턴스가 있으면 재사용
+    if (this.sceneInstances[name]) {
+      return this.sceneInstances[name];
+    }
+
+    // 없으면 팩토리 함수로 생성
+    if (this.sceneFactories[name]) {
+      console.log(`🎬 씬 '${name}' 생성 중...`);
+      this.sceneInstances[name] = this.sceneFactories[name]();
+      return this.sceneInstances[name];
+    }
+
+    console.error(`❌ 씬 '${name}'을 찾을 수 없습니다.`);
+    return null;
+  }
+
+  /** 씬 전환 */
   transitionTo(name) {
     const overlay = document.getElementById('transition-overlay');
     overlay.classList.add('show');
 
-    // 1초 후에 실제 씬 전환
     setTimeout(() => {
       if (this.current && this.current.onExit) {
         this.current.onExit();
       }
 
-      this.current = this.scenes[name];
-      if (this.current.onEnter) {
+      // 여기가 핵심! 필요할 때만 씬 생성
+      this.current = this.getScene(name);
+      
+      if (this.current && this.current.onEnter) {
         this.current.onEnter();
       }
 
@@ -35,28 +55,20 @@ export default class SceneManager  {
     }, 1000);
   }
 
-  /** 매 프레임마다 호출 */
+  // renderLoop()는 그대로 유지
   renderLoop() {
     requestAnimationFrame(() => this.renderLoop());
     
     if (this.current) {
-      // 1. 씬의 update 메서드 호출 (VideoTexture 업데이트 등)
       if (this.current.update) {
         this.current.update();
       }
       
-      // 2. 씬의 render 메서드 호출 (setClearColor 등)
       if (this.current.render) {
         this.current.render();
       }
       
-      // 3. Three.js 렌더링 실행
       this.renderer.render(this.current.scene, this.camera);
     }
-  }
-
-  /** SceneManager 시작 (renderLoop 시작) */
-  start() {
-    this.renderLoop();
   }
 }

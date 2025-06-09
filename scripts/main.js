@@ -7,7 +7,6 @@ import SceneIntro from './scenes/SceneIntro.js';
 import SceneManager from './SceneManager.js';
 import SceneVotingBooth from './scenes/SceneVotingBooth.js';
 import SceneTVCount from './scenes/SceneTVCount.js';
-import ScenePhoneCheck from './scenes/ScenePhoneCheck.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
@@ -55,26 +54,12 @@ window.addEventListener('DOMContentLoaded', () => {
   window.renderer = renderer; // 렌더러도 전역에 노출
 
   // 4) 씬 인스턴스 생성 및 등록
-  const introScene = new SceneIntro(renderer, camera, sceneManager);
-  const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
-  const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
-  const phoneCheck = new ScenePhoneCheck(renderer, camera, sceneManager);
-  const voteChoiceScene = new SceneVoteChoice(renderer, camera, sceneManager);
-  const home = new SceneHome(renderer, camera, sceneManager);
-  const returnHomeScene = new SceneReturnHome(renderer, camera, sceneManager);
-  const earlyVoteScene = new SceneEarlyVote(renderer, camera, sceneManager);
-  const mainVoteScene = new SceneMainVote(renderer, camera, sceneManager);
-
-  sceneManager.addScene('intro', introScene);
-  sceneManager.addScene('votingBooth', votingBoothScene);
-  sceneManager.addScene('tvCount', tvCountScene);
-  sceneManager.addScene('phoneCheck', phoneCheck);
-  sceneManager.addScene('voteChoice', voteChoiceScene);
-  sceneManager.addScene('home', home);
-  // sceneManager.addScene('candidateCamp', candidateCampScene); // SceneCandidateCamp 파일이 없음
-  sceneManager.addScene('returnHome', returnHomeScene);
-  sceneManager.addScene('earlyVote', earlyVoteScene);
-  sceneManager.addScene('mainVote', mainVoteScene);
+  sceneManager.addScene('intro', () => new SceneIntro(renderer, camera, sceneManager));
+  sceneManager.addScene('votingBooth', () => new SceneVotingBooth(renderer, camera, sceneManager));
+  sceneManager.addScene('tvCount', () => new SceneTVCount(renderer, camera, sceneManager));
+  sceneManager.addScene('voteChoice', () => new SceneVoteChoice(renderer, camera, sceneManager));
+  sceneManager.addScene('home', () => new SceneHome(renderer, camera, sceneManager));
+  sceneManager.addScene('returnHome', () => new SceneReturnHome(renderer, camera, sceneManager));
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
