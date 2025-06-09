@@ -48,6 +48,7 @@ class SceneMenu {
       <button id="btn-voter">▶ 유권자로 시작</button>
       <button id="btn-candidate">▶ 후보로 시작</button>
       <button id="btn-result">▶ 개표 결과 화면(연타 테스트)</button>
+      <button id="btn-ending">▶ 엔딩 화면(연타 테스트)</button>
     `;
     div.style.display = 'none';
     document.body.appendChild(div);
@@ -61,6 +62,9 @@ class SceneMenu {
     });
     document.getElementById('btn-result').addEventListener('click', () => {
     this.sceneManager.transitionTo('resultBroadcast');
+    });
+    document.getElementById('btn-ending').addEventListener('click', () => {
+      this.sceneManager.transitionTo('ending');
     });
   }
 }

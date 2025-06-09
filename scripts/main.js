@@ -29,6 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const resultBroadcastScene = new SceneResultBroadcast(renderer, camera, sceneManager);
   const resultVictoryScene = new ResultVictoryScene(renderer, camera, sceneManager);
   const fiveYearsLaterScene = new ResultFiveYearsLaterScene(renderer, camera, sceneManager);
+  const endingScene = new EndingScene(renderer, camera, sceneManager);
 
 
   sceneManager.addScene('menu', menuScene);
@@ -38,6 +39,7 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('resultBroadcast', resultBroadcastScene);
   sceneManager.addScene('victory', resultVictoryScene);
   sceneManager.addScene('fiveYearsLater', fiveYearsLaterScene);
+  sceneManager.addScene('ending', endingScene);
 
   // 5) 최초 씬 설정: 메뉴 화면
   sceneManager.transitionTo('menu');
