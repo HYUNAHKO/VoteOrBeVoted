@@ -14,12 +14,19 @@ import SceneReturnHome from './scenes/SceneReturnHome.js';
 import SceneEarlyVote from './scenes/SceneEarlyVote.js';
 
 window.addEventListener('DOMContentLoaded', () => {
+  THREE.ColorManagement.enabled = true;
   // 1) 렌더러 생성 - 크기 설정 확실히
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  
+  // Three.js r160 렌더러 설정 추가
+  renderer.outputColorSpace = THREE.SRGBColorSpace; 
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.useLegacyLights = true;
   
   // 캔버스를 컨테이너에 추가
   const container = document.getElementById('canvas-container');
@@ -44,6 +51,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // 전역 변수로 노출 (디버깅용)
   window.sceneManager = sceneManager;
   window.THREE = THREE; // THREE.js도 전역에 노출
+  window.renderer = renderer; // 렌더러도 전역에 노출
 
   // 4) 씬 인스턴스 생성 및 등록
   const introScene = new SceneIntro(renderer, camera, sceneManager);
@@ -79,6 +87,8 @@ window.addEventListener('DOMContentLoaded', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
 
   console.log('SceneManager initialized:', sceneManager);

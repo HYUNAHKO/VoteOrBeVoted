@@ -1,6 +1,6 @@
 // SceneHome.js - 기존 구조에 맞춘 최소 수정 + 이동 조작 + 핸드폰 상호작용
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { envModelLoader } from '../utils/processImport.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 export default class SceneHome {
@@ -15,7 +15,6 @@ export default class SceneHome {
 
     // 리스폰 관련 변수 
     this.shouldRespawn = false;
-
     
     // CSS2DRenderer 세팅
     this.labelRenderer = new CSS2DRenderer();
@@ -51,13 +50,17 @@ export default class SceneHome {
     this.roomInfo = null;
     this.phoneGlow = null;
 
-    // GLTF 로더 생성
-    this.gltfLoader = new GLTFLoader();
-
     this._init();
   }
 
   _init() {
+    THREE.ColorManagement.enabled = true;
+
+    this.renderer.outputColorSpace    = THREE.SRGBColorSpace;
+    this.renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+
+    
     // 1) 배경 
     this.scene.background = new THREE.Color(0x1a1a1a);
     
@@ -68,73 +71,48 @@ export default class SceneHome {
     this._createTextOverlay();
     
     // 4) 실제 다운로드받은 에셋 로드
-    this._loadActualBedroom();
-
+    envModelLoader.loadEnvironmentModel(
+          'bedroom',
+          [ './assets/models/bedroom.glb' ],
+          this.scene,
+          (modelRoot) => {
+            // 로딩 성공 시 호출되는 콜백
+            this.bedroomModel = modelRoot;
+            this._afterLoad();
+          },
+          undefined,
+          (err) => console.error(err)
+        );
   }
 
   
-  async _loadActualBedroom() {
-    try {
-      console.log('🎯 실제 다운로드받은 방 에셋 로딩 중...');
-      
-      // 메인 파일만 로드
-      const filePath = './assets/models/bedroom.glb';
-      
-      console.log(`🔍 로딩: ${filePath}`);
-      const loadedAsset = await this._loadGLTFDirect(filePath);
-      console.log(`✅ 성공: ${filePath}`);
-      
-      // 성공적으로 로드된 에셋 처리
-      this.bedroomModel = loadedAsset.scene;
-      
-      console.log('📐 에셋 정보:', {
-        children: this.bedroomModel.children.length,
-        animations: loadedAsset.animations?.length || 0
-      });
-      
-      // 에셋 최적화
-      this._optimizeLoadedAsset();
-      
-      // 씬에 추가
-      this.scene.add(this.bedroomModel);
-      
-      // 에셋에 맞게 환경 조정
-      this._adjustEnvironmentForAsset();
-      
-      // ✨ 방 내부에 카메라 자동 배치
-      this._autoPositionCameraInside();
-      
-      this.assetsLoaded = true;
-      
-      console.log('🎉 실제 방 에셋 로딩 완료!');
-      console.log('📷 카메라는 고정 위치 (0, 1.6, 5) 사용 중');
-      
-    } catch (error) {
-      console.error('💥 방 에셋 로딩 실패:', error);
-      console.error('💡 확인사항: assets/models/bedroom.glb 파일이 있는지 체크해주세요');
-    }
-  }
-
-  _loadGLTFDirect(url) {
-    return new Promise((resolve, reject) => {
-      this.gltfLoader.load(
-        url,
-        (gltf) => {
-          resolve(gltf);
-        },
-        (progress) => {
-          // 진행률은 콘솔에만 출력
-          if (progress.total > 0) {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            console.log(`📊 로딩 진행률: ${percent}%`);
-          }
-        },
-        (error) => {
-          reject(error);
-        }
+  _afterLoad() {
+  // 디버그용으로 맵 정보 출력
+  this.bedroomModel.traverse(child => {
+    if (child.isMesh) {
+      console.log(
+        `[DBG] Mesh "${child.name}" → map:`,
+        child.material.map,
+        ', emissiveMap:',
+        child.material.emissiveMap
       );
-    });
-  }
+    }
+  });
+
+  // sRGB 인코딩 강제 설정
+  this.bedroomModel.traverse(child => {
+    if (child.isMesh && child.material.map) {
+      child.material.map.encoding = THREE.sRGBEncoding;
+      child.material.needsUpdate = true;
+    }
+  });
+
+  // 기존 환경 셋업 호출
+  this._adjustEnvironmentForAsset();
+  this._autoPositionCameraInside();
+  this.assetsLoaded = true;
+ }
+
 
   _optimizeLoadedAsset() {
     if (!this.bedroomModel) return;
@@ -162,45 +140,41 @@ export default class SceneHome {
   }
 
   _adjustEnvironmentForAsset() {
-    // 기존 기본 조명 제거
+    // 기존 조명 제거
     const lightsToRemove = [];
     this.scene.traverse((child) => {
-      if (child.isLight) {
-        lightsToRemove.push(child);
-      }
+        if (child.isLight) {
+            lightsToRemove.push(child);
+        }
     });
     lightsToRemove.forEach(light => this.scene.remove(light));
     
-    // 에셋에 맞는 조명 설정
-    
-    // 1) 부드러운 주변광
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // 훨씬 더 밝은 조명 설정
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // 더 밝게
     this.scene.add(ambientLight);
     
-    // 2) 주 방향광 (자연스러운 느낌)
-    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); // 더 밝게
     mainLight.position.set(5, 10, 5);
     mainLight.castShadow = true;
-    mainLight.shadow.mapSize.width = 2048;
-    mainLight.shadow.mapSize.height = 2048;
-    mainLight.shadow.camera.near = 0.5;
-    mainLight.shadow.camera.far = 50;
-    mainLight.shadow.camera.left = -10;
-    mainLight.shadow.camera.right = 10;
-    mainLight.shadow.camera.top = 10;
-    mainLight.shadow.camera.bottom = -10;
     this.scene.add(mainLight);
     
-    // 3) 보조 포인트 라이트
-    const fillLight = new THREE.PointLight(0xffd4a3, 0.4, 20);
-    fillLight.position.set(-5, 3, 2);
-    this.scene.add(fillLight);
+    // 추가 보조광
+    const fillLight1 = new THREE.PointLight(0xffffff, 0.8, 20);
+    fillLight1.position.set(-5, 5, 5);
+    this.scene.add(fillLight1);
     
-    // 4) 배경색 조정 (에셋에 어울리게)
-    this.scene.background = new THREE.Color(0xf8f8f8);
+    const fillLight2 = new THREE.PointLight(0xffffff, 0.8, 20);
+    fillLight2.position.set(5, 5, -5);
+    this.scene.add(fillLight2);
+    // 환경광
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    this.scene.add(hemi);
+
+    // 배경색
+    this.scene.background = new THREE.Color(0xffffff);
     
     console.log('✅ 환경 조명 설정 완료');
-  }
+}
 
   // 방 내부에 카메라 자동 배치
   _autoPositionCameraInside() {
@@ -866,8 +840,10 @@ export default class SceneHome {
       <button id="main" style="width:100%;padding:10px;margin:8px 0;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;">본 투표일</button>
       <button id="back-vote" style="margin-top:12px;padding:8px;background:#aaa;color:#fff;border:none;border-radius:4px;cursor:pointer;">뒤로</button>
     `;
+    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 --------------------------------------------------------------------------------------
     container.querySelector('#early').onclick = () => this.sceneManager.transitionTo('earlyVote');
     container.querySelector('#main').onclick = () => this.sceneManager.transitionTo('mainVote');
+    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 --------------------------------------------------------------------------------------
     container.querySelector('#back-vote').onclick = () => {
         this.phoneModel.remove(this.phoneUI);
         this.phoneUI = null;
