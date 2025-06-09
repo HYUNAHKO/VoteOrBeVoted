@@ -2,13 +2,35 @@
  * main.js
  * - Three.js 초기화, SceneManager 생성 및 씬 등록, 렌더 루프를 시작
  */
+import * as THREE from 'three';
+import SceneIntro from './scenes/SceneIntro.js';
+import SceneManager from './SceneManager.js';
+import SceneVotingBooth from './scenes/SceneVotingBooth.js';
+import SceneTVCount from './scenes/SceneTVCount.js';
+import SceneVoteChoice from './scenes/SceneVoteChoice.js';
+import SceneHome from './scenes/SceneHome.js';
+import SceneReturnHome from './scenes/SceneReturnHome.js';
+// import SceneEarlyVote from './scenes/SceneEarlyVote.js';
+// import SceneMainVote from './scenes/SceneMainVote.js';
+
 window.addEventListener('DOMContentLoaded', () => {
-  // 1) 렌더러 생성
+  THREE.ColorManagement.enabled = true;
+  // 1) 렌더러 생성 - 크기 설정 확실히
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  document.getElementById('canvas-container').appendChild(renderer.domElement);
+  
+  // Three.js r160 렌더러 설정 추가
+  renderer.outputColorSpace = THREE.SRGBColorSpace; 
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.useLegacyLights = true;
+  
+  // 캔버스를 컨테이너에 추가
+  const container = document.getElementById('canvas-container');
+  container.appendChild(renderer.domElement);
 
   // 2) 카메라 생성
   const camera = new THREE.PerspectiveCamera(
@@ -17,40 +39,49 @@ window.addEventListener('DOMContentLoaded', () => {
     0.1,
     1000
   );
+  
+  // 카메라 초기 위치 확실히 설정
+  camera.position.set(0, 2, 5);
+  camera.rotation.set(0, 0, 0);
+  camera.updateProjectionMatrix();
 
   // 3) SceneManager 생성
   const sceneManager = new SceneManager(renderer, camera);
+  
+  // 전역 변수로 노출 (디버깅용)
+  window.sceneManager = sceneManager;
+  window.THREE = THREE; // THREE.js도 전역에 노출
+  window.renderer = renderer; // 렌더러도 전역에 노출
 
   // 4) 씬 인스턴스 생성 및 등록
   const menuScene = new SceneMenu(renderer, camera, sceneManager);
   const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
   const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
   const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
-  const resultBroadcastScene = new SceneResultBroadcast(renderer, camera, sceneManager);
-  const resultVictoryScene = new ResultVictoryScene(renderer, camera, sceneManager);
-  const fiveYearsLaterScene = new ResultFiveYearsLaterScene(renderer, camera, sceneManager);
-  const endingScene = new EndingScene(renderer, camera, sceneManager);
-
 
   sceneManager.addScene('menu', menuScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
   sceneManager.addScene('tvCount', tvCountScene);
   sceneManager.addScene('candidateCamp', candidateCampScene);
-  sceneManager.addScene('resultBroadcast', resultBroadcastScene);
-  sceneManager.addScene('victory', resultVictoryScene);
-  sceneManager.addScene('fiveYearsLater', fiveYearsLaterScene);
-  sceneManager.addScene('ending', endingScene);
 
   // 5) 최초 씬 설정: 메뉴 화면
   sceneManager.transitionTo('menu');
 
-  // 6) 렌더링 루프 호출
+  // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
+
+  // 6) 최초 씬 설정
+  sceneManager.transitionTo('intro');
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {
+    console.log('🔄 윈도우 리사이즈:', window.innerWidth, 'x', window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
+
+  console.log('SceneManager initialized:', sceneManager);
 });
