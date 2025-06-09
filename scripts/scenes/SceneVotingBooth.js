@@ -1,9 +1,10 @@
 /**
  * SceneVotingBooth.js
- * - 유권자 경로 진입 후 보게 되는 투표소 씬
+ * - 투표소 씬
  * - 투표소 예시를 SceneMenu 패턴에 맞춰 감쌌습니다.
  */
 import * as THREE from 'three'
+import { envModelLoader, characterLoader } from '../utils/processImport.js';
 
 export default class SceneVotingBooth {
   constructor(renderer, camera, sceneManager) {
