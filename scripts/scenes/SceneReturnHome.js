@@ -1,7 +1,7 @@
-import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { envModelLoader } from '../utils/processImport.js';
 
-class SceneReturnHome {
+export default class SceneReturnHome {
     constructor(renderer, camera, sceneManager) {
         this.renderer = renderer;
         this.camera = camera;
@@ -46,7 +46,7 @@ class SceneReturnHome {
     // --------------------------
     _initScene() {
         // 기본 안개 설정 (조절 불가)
-        this.scene.fog = new THREE.FogExp2(0xa68fa2, 0.01);
+        this.scene.fog = new THREE.FogExp2(0x856d71, 0.01);
         
         const rgbeLoader = new RGBELoader();
         
@@ -55,11 +55,11 @@ class SceneReturnHome {
             
             // 환경 조명 적용
             this.scene.environment = texture;
-            this.scene.envirnomentIntensity = 0.5;
+            this.scene.environmentIntensity = 0.8;
             
             // 배경으로도 사용
             this.scene.background = texture;
-            this.scene.backgroundBlurriness = 0.8;
+            this.scene.backgroundBlurriness = 0.3;
         });
 
         // 라이팅 강화
@@ -104,9 +104,9 @@ class SceneReturnHome {
 
     _loadOutdoorModel() {
         const possiblePaths = [
-            './assets/outdoor.glb',      // debug-return-home.html에서
-            '../assets/outdoor.glb',     // scripts 폴더에서
-            'assets/outdoor.glb'         // 상대 경로
+            './assets/models/outdoor.glb',      // debug-return-home.html에서
+            '../assets/models/outdoor.glb',     // scripts 폴더에서
+            'assets/models/outdoor.glb'         // 상대 경로
         ];
         
         envModelLoader.loadEnvironmentModel(
