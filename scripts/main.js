@@ -50,6 +50,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const phoneCheck = new ScenePhoneCheck(renderer, camera, sceneManager);
   const voteChoiceScene = new SceneVoteChoice(renderer, camera, sceneManager);
   const home = new SceneHome(renderer, camera, sceneManager);
+  const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
+  const returnHomeScene = new SceneReturnHome(renderer, camera, sceneManager);
 
   sceneManager.addScene('intro', introScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
@@ -57,6 +59,8 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('phoneCheck', phoneCheck);
   sceneManager.addScene('voteChoice', voteChoiceScene);
   sceneManager.addScene('home', home);
+  sceneManager.addScene('candidateCamp', candidateCampScene);
+  sceneManager.addScene('returnHome', returnHomeScene);
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
