@@ -167,3 +167,113 @@ button:not(#intro-start):hover {
 #intro-start {
   z-index: 1000; /* 다른 요소 위에 표시되도록 */
 }
+
+/* 휴대폰 UI */
+.phone-ui {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  display: none;
+}
+
+.phone-screen {
+  width: 320px;
+  height: 600px;
+  background: #000;
+  border-radius: 30px;
+  padding: 20px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  border: 2px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  margin-bottom: 20px;
+  padding: 10px 0;
+}
+
+.phone-time {
+  font-weight: bold;
+}
+
+.phone-status {
+  display: flex;
+  gap: 5px;
+}
+
+.message-container {
+  flex: 1;
+  background: #f5f5f5;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  background: #dcf8c6;
+  border-radius: 15px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  max-width: 80%;
+  position: relative;
+}
+
+.message-bubble.friend {
+  background: #e5e5ea;
+  align-self: flex-start;
+}
+
+.message-sender {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.message-text {
+  font-size: 16px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.choice-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phone-choice-btn {
+  background: #007AFF;
+  color: white;
+  border: none;
+  padding: 15px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.phone-choice-btn:hover {
+  background: #0056CC;
+}
+
+.phone-choice-btn:active {
+  background: #004499;
+}

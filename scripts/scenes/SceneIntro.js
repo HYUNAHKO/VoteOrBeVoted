@@ -101,7 +101,7 @@ export default class SceneIntro {
     const videoTexture = new THREE.VideoTexture(video);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.format = THREE.RGBFormat;
+
     this.videoTexture = videoTexture;
 
     // 3) 화면 Plane 메쉬 

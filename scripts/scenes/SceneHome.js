@@ -1,6 +1,6 @@
 // SceneHome.js - 기존 구조에 맞춘 최소 수정 + 이동 조작 + 핸드폰 상호작용
 import * as THREE from 'three';
-import { GLTFLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 export default class SceneHome {
@@ -78,7 +78,7 @@ export default class SceneHome {
       console.log('🎯 실제 다운로드받은 방 에셋 로딩 중...');
       
       // 메인 파일만 로드
-      const filePath = './assets/models/bedroom-scene.glb';
+      const filePath = './assets/models/bedroom.glb';
       
       console.log(`🔍 로딩: ${filePath}`);
       const loadedAsset = await this._loadGLTFDirect(filePath);
@@ -111,7 +111,7 @@ export default class SceneHome {
       
     } catch (error) {
       console.error('💥 방 에셋 로딩 실패:', error);
-      console.error('💡 확인사항: assets/models/bedroom-scene.glb 파일이 있는지 체크해주세요');
+      console.error('💡 확인사항: assets/models/bedroom.glb 파일이 있는지 체크해주세요');
     }
   }
 

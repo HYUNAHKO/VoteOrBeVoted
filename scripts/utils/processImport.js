@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 
 /**
  * 환경 GLTF 모델을 로드하고 특정 오브젝트를 찾는 유틸리티 클래스
@@ -220,6 +220,50 @@ export class EnvModelLoader {
         if (object.children && object.children.length > 0) {
             object.children.forEach(child => this._logModelStructure(child, prefix + '  '));
         }
+    }
+
+    /**
+     * 씬의 전체 hierarchy를 콘솔에 출력
+     * @param {THREE.Scene} scene - 출력할 씬
+     * @param {string} title - 출력 제목 (optional)
+     */
+    static logSceneHierarchy(scene, title = 'Scene Hierarchy') {
+        console.log(`\n=== ${title} ===`);
+        console.log(`Scene contains ${scene.children.length} top-level objects:`);
+        
+        const logObject = (object, level = 0) => {
+            const indent = '  '.repeat(level);
+            const objectType = object.constructor.name;
+            const name = object.name || '(unnamed)';
+            
+            let info = `${indent}${objectType}: "${name}"`;
+            
+            // 추가 정보 표시
+            if (object.position) {
+                const pos = object.position;
+                info += ` pos:(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`;
+            }
+            
+            if (object.isMesh) {
+                const geometry = object.geometry;
+                const material = object.material;
+                info += ` [Mesh: ${geometry.constructor.name}, ${material.constructor.name}]`;
+            } else if (object.isLight) {
+                info += ` [Light: intensity=${object.intensity}]`;
+            } else if (object.isCamera) {
+                info += ` [Camera]`;
+            }
+            
+            console.log(info);
+            
+            // 자식 객체들 재귀적으로 출력
+            if (object.children && object.children.length > 0) {
+                object.children.forEach(child => logObject(child, level + 1));
+            }
+        };
+        
+        scene.children.forEach(child => logObject(child, 0));
+        console.log(`=== End of ${title} ===\n`);
     }
 }
 

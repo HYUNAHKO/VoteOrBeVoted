@@ -10,7 +10,7 @@ export default class SceneReturnHome {
         
         // 이동 및 인터랙션 시스템
         this.keys = { w: false, a: false, s: false, d: false };
-        this.moveSpeed = 0.1;
+        this.moveSpeed = 0.3;
         this.wallPosterObject = null;
         this.highlightedObject = null;
         this.originalMaterial = null;
@@ -88,18 +88,50 @@ export default class SceneReturnHome {
         // 호버 라벨 - CSS 클래스 사용
         this.hoverLabel = document.createElement('div');
         this.hoverLabel.className = 'hover-label';
+        this.hoverLabel.style.display = 'none'; // 초기에는 숨김
         document.body.appendChild(this.hoverLabel);
 
         // 선택지 모달 - CSS 클래스 사용
         this.modal = document.createElement('div');
         this.modal.className = 'choice-modal';
+        this.modal.style.display = 'none'; // 초기에는 숨김
         document.body.appendChild(this.modal);
         
         // Floating 메시지 - CSS 클래스 사용
         this.floatingMessage = document.createElement('div');
         this.floatingMessage.className = 'floating-message';
-        this.floatingMessage.textContent = '앞에 선거 벽보가 있는 것 같다! 구경하러 가보자.';
+        this.floatingMessage.textContent = '길 건너에 선거 벽보가 있는 것 같다! 구경하러 가보자.';
+        this.floatingMessage.style.display = 'none'; // 초기에는 숨김
         document.body.appendChild(this.floatingMessage);
+        
+        // 휴대폰 UI 생성
+        this.phoneUI = document.createElement('div');
+        this.phoneUI.className = 'phone-ui';
+        this.phoneUI.style.display = 'none'; // 초기에는 숨김
+        this.phoneUI.innerHTML = `
+            <div class="phone-screen">
+                <div class="phone-header">
+                    <div class="phone-time">14:30</div>
+                    <div class="phone-status">
+                        <span>●●●</span>
+                        <span>📶</span>
+                        <span>🔋</span>
+                    </div>
+                </div>
+                <div class="message-container">
+                    <div class="message-bubble friend">
+                        <div class="message-sender">친구</div>
+                        <div class="message-text">너 누구 뽑았어?!</div>
+                        <div class="message-time">지금</div>
+                    </div>
+                </div>
+                <div class="choice-buttons">
+                    <button id="tell-friend" class="phone-choice-btn">나 당연히 ㅇㅇㅇ 뽑았지!</button>
+                    <button id="keep-secret" class="phone-choice-btn">비밀이야 ㅋㅋ</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(this.phoneUI);
     }
 
     _loadOutdoorModel() {
@@ -311,7 +343,7 @@ export default class SceneReturnHome {
     // 씬 진입 시 호출
     onEnter() {
         // 카메라 초기 위치 설정
-        this.camera.position.set(110, 10, 140);
+        this.camera.position.set(-10, 10, 130);
         
         // 이벤트 리스너 등록
         window.addEventListener('keydown', this.onKeyDown);
@@ -327,6 +359,11 @@ export default class SceneReturnHome {
         
         // Floating 메시지 표시
         this._showFloatingMessage();
+        
+        // 5초 후 휴대폰 UI 표시
+        setTimeout(() => {
+            this._showPhoneUI();
+        }, 7000);
     }
 
     // 씬 종료 시 호출
@@ -356,6 +393,7 @@ export default class SceneReturnHome {
         if (this.hoverLabel) this.hoverLabel.style.display = 'none';
         if (this.modal) this.modal.style.display = 'none';
         if (this.floatingMessage) this.floatingMessage.style.display = 'none';
+        if (this.phoneUI) this.phoneUI.style.display = 'none';
     }
 
     _clearHighlight() {
@@ -375,6 +413,30 @@ export default class SceneReturnHome {
                     this.floatingMessage.style.display = 'none';
                 }
             }, 5000);
+        }
+    }
+
+    _showPhoneUI() {
+        if (this.phoneUI) {
+            this.phoneUI.style.display = 'block';
+            
+            // 선택지 이벤트 리스너 추가
+            const tellFriendBtn = document.getElementById('tell-friend');
+            const keepSecretBtn = document.getElementById('keep-secret');
+            
+            if (tellFriendBtn) {
+                tellFriendBtn.onclick = () => {
+                    this.phoneUI.style.display = 'none';
+                    this.sceneManager.transitionTo('home');
+                };
+            }
+            
+            if (keepSecretBtn) {
+                keepSecretBtn.onclick = () => {
+                    this.phoneUI.style.display = 'none';
+                    // 계속 현재 씬에서 진행 (벽보 이벤트로)
+                };
+            }
         }
     }
 

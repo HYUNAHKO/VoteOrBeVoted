@@ -4,6 +4,7 @@
  * - 투표소 예시를 SceneMenu 패턴에 맞춰 감쌌습니다.
  */
 import * as THREE from 'three'
+import { envModelLoader, characterLoader } from '../utils/processImport.js';
 
 export default class SceneVotingBooth {
   constructor(renderer, camera, sceneManager) {

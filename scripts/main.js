@@ -10,7 +10,8 @@ import SceneTVCount from './scenes/SceneTVCount.js';
 import ScenePhoneCheck from './scenes/ScenePhoneCheck.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
-import SceneReturnHome from './scenes/SceneReturnHome.js'
+import SceneReturnHome from './scenes/SceneReturnHome.js';
+import SceneEarlyVote from './scenes/SceneEarlyVote.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   // 1) 렌더러 생성 - 크기 설정 확실히
@@ -51,8 +52,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const phoneCheck = new ScenePhoneCheck(renderer, camera, sceneManager);
   const voteChoiceScene = new SceneVoteChoice(renderer, camera, sceneManager);
   const home = new SceneHome(renderer, camera, sceneManager);
-  const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
   const returnHomeScene = new SceneReturnHome(renderer, camera, sceneManager);
+  const earlyVoteScene = new SceneEarlyVote(renderer, camera, sceneManager);
 
   sceneManager.addScene('intro', introScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
@@ -60,14 +61,17 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('phoneCheck', phoneCheck);
   sceneManager.addScene('voteChoice', voteChoiceScene);
   sceneManager.addScene('home', home);
-  sceneManager.addScene('candidateCamp', candidateCampScene);
+  // sceneManager.addScene('candidateCamp', candidateCampScene); // SceneCandidateCamp 파일이 없음
   sceneManager.addScene('returnHome', returnHomeScene);
+  sceneManager.addScene('earlyVote', earlyVoteScene);
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
 
-  // 6) 최초 씬 설정: 인트로 화면
-  sceneManager.transitionTo('intro');
+  // 6) 최초 씬 설정: 디버깅을 위해 변수로 분리
+  // 사용 가능한 씬: 'intro', 'votingBooth', 'tvCount', 'phoneCheck', 'voteChoice', 'home', 'returnHome', 'earlyVote'
+  const DEBUG_START_SCENE = 'earlyVote';
+  sceneManager.transitionTo(DEBUG_START_SCENE);
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {
