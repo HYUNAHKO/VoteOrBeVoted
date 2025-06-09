@@ -10,6 +10,7 @@ import SceneTVCount from './scenes/SceneTVCount.js';
 import ScenePhoneCheck from './scenes/ScenePhoneCheck.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
+import SceneReturnHome from './scenes/SceneReturnHome.js'
 
 window.addEventListener('DOMContentLoaded', () => {
   // 1) 렌더러 생성 - 크기 설정 확실히

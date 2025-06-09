@@ -11,7 +11,7 @@ class SceneReturnHome {
         // 이동 및 인터랙션 시스템
         this.keys = { w: false, a: false, s: false, d: false };
         this.moveSpeed = 0.1;
-        this.wallPosterObject = null;  // 단일 오브젝트로 변경
+        this.wallPosterObject = null;
         this.highlightedObject = null;
         this.originalMaterial = null;
         this.raycaster = new THREE.Raycaster();
