@@ -12,6 +12,7 @@ import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
 import SceneEarlyVote from './scenes/SceneEarlyVote.js';
+import SceneMainVote from './scenes/SceneMainVote.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   THREE.ColorManagement.enabled = true;
@@ -62,6 +63,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const home = new SceneHome(renderer, camera, sceneManager);
   const returnHomeScene = new SceneReturnHome(renderer, camera, sceneManager);
   const earlyVoteScene = new SceneEarlyVote(renderer, camera, sceneManager);
+  const mainVoteScene = new SceneMainVote(renderer, camera, sceneManager);
 
   sceneManager.addScene('intro', introScene);
   sceneManager.addScene('votingBooth', votingBoothScene);
@@ -72,13 +74,14 @@ window.addEventListener('DOMContentLoaded', () => {
   // sceneManager.addScene('candidateCamp', candidateCampScene); // SceneCandidateCamp 파일이 없음
   sceneManager.addScene('returnHome', returnHomeScene);
   sceneManager.addScene('earlyVote', earlyVoteScene);
+  sceneManager.addScene('mainVote', mainVoteScene);
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
 
   // 6) 최초 씬 설정: 디버깅을 위해 변수로 분리
-  // 사용 가능한 씬: 'intro', 'votingBooth', 'tvCount', 'phoneCheck', 'voteChoice', 'home', 'returnHome', 'earlyVote'
-  const DEBUG_START_SCENE = 'earlyVote';
+  // 사용 가능한 씬: 'intro', 'votingBooth', 'tvCount', 'phoneCheck', 'voteChoice', 'home', 'returnHome', 'earlyVote', 'mainVote'
+  const DEBUG_START_SCENE = 'mainVote';
   sceneManager.transitionTo(DEBUG_START_SCENE);
 
   // 7) 창 크기 변화 처리
