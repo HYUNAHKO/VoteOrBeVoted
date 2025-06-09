@@ -1,4 +1,7 @@
-class SceneResultBroadcast {
+import * as THREE from 'three';
+
+
+export default class ResultBroadcastScene {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;
@@ -22,8 +25,16 @@ class SceneResultBroadcast {
   }
 
   onExit() {
-    document.getElementById('result-ui').style.display = 'none';
+    const ui = document.getElementById('result-ui');
+    if (ui) {
+      ui.remove(); // 완전히 DOM에서 제거
+    }
     window.removeEventListener('keydown', this._onKeyDown);
+
+    // Remove all objects from the scene to clean up visuals
+    while (this.scene.children.length > 0) {
+      this.scene.remove(this.scene.children[0]);
+    }
   }
 
   update() {
@@ -89,5 +100,3 @@ class SceneResultBroadcast {
     };
   }
 }
-
-

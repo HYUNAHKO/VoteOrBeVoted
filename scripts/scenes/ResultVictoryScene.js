@@ -1,6 +1,6 @@
+import * as THREE from 'three';
 
-
-class ResultVictoryScene {
+export default class ResultVictoryScene {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;
@@ -14,10 +14,14 @@ class ResultVictoryScene {
     this.camera.position.set(0, 1.6, 5);
     this.camera.lookAt(0, 1.6, 0);
     document.getElementById('victory-ui').style.display = 'block';
+    setTimeout(() => {
+      this.sceneManager.transitionTo('ending');
+    }, 1000);
   }
 
   onExit() {
-    document.getElementById('victory-ui').style.display = 'none';
+    const ui = document.getElementById('victory-ui');
+    if (ui) ui.remove();
   }
 
   update() {

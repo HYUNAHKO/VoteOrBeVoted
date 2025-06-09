@@ -1,8 +1,12 @@
-const THREE = window.THREE;
+
+import * as THREE from 'three';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+
 
 // 주어진 텍스트와 폰트를 이용해 텍스트 메시 객체를 생성하는 함수
 function createTextMesh(text, font, size = 1.0, height = 0.05, color = 0xffff00) {
-  const geometry = new THREE.TextGeometry(text, {
+  const geometry = new TextGeometry(text, {
     font: font,
     size: size,
     height: height,
@@ -13,7 +17,7 @@ function createTextMesh(text, font, size = 1.0, height = 0.05, color = 0xffff00)
 }
 
 // 엔딩 씬을 담당하는 클래스
-class EndingScene {
+export default class EndingScene {
   constructor(renderer, camera, sceneManager) {
     // 렌더러
     this.renderer = renderer;
@@ -41,7 +45,7 @@ class EndingScene {
   onEnter() {
     this.scene.background = new THREE.Color(0x000000); // 블랙 배경 설정
 
-    const fontLoader = new THREE.FontLoader();
+    const fontLoader = new FontLoader();
 
     fontLoader.load('/scripts/fonts/Star Jedi Hollow_Regular.json', (titleFont) => {
       fontLoader.load('/scripts/fonts/HSJiptokki Black_Regular.json', (bodyFont) => {
@@ -215,7 +219,7 @@ class EndingScene {
 
     button.addEventListener("click", () => {
       button.remove(); // 버튼 제거
-      this.sceneManager.transitionTo("menu");
+      this.sceneManager.transitionTo("intro");
     });
 
     document.body.appendChild(button);

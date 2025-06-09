@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoteOrBeVoted - Debug Result</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: black;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+
+  <!-- Import Map: 'three' 및 examples 모듈 경로 매핑 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/": "https://unpkg.com/three@0.160.0/",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import ResultBroadcastScene from './scripts/scenes/ResultBroadcastScene.js';
+    import ResultFiveYearsLaterScene from './scripts/scenes/ResultFiveYearsLaterScene.js';
+    import ResultVictoryScene from './scripts/scenes/ResultVictoryScene.js';
+    import EndingScene from './scripts/scenes/EndingScene.js';
+    import IntroScene from './scripts/scenes/SceneIntro.js';
+    import SceneManager from './scripts/SceneManager.js';
+
+    const container = document.querySelector('#canvas-container');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 5);
+
+    const scene = new THREE.Scene();
+    const sceneManager = new SceneManager(renderer, camera);
+
+    sceneManager.addScene('result', () => new ResultBroadcastScene(renderer, camera, sceneManager));
+    sceneManager.addScene('fiveYearsLater', () => new ResultFiveYearsLaterScene(renderer, camera, sceneManager));
+    sceneManager.addScene('victory', () => new ResultVictoryScene(renderer, camera, sceneManager));
+    sceneManager.addScene('ending', () => new EndingScene(renderer, camera, sceneManager));
+    sceneManager.addScene('intro', () => new IntroScene(renderer, camera, sceneManager));
+
+    sceneManager.transitionTo('result');
+    sceneManager.renderLoop();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</div>
+<div id="transition-overlay"></div>
+<style>
+  #transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    opacity: 0;
+    transition: opacity 1s ease;
+    pointer-events: none;
+    z-index: 1000;
+  }
+  #transition-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+</style>
+</body>
+</html>

@@ -1,6 +1,6 @@
+import * as THREE from 'three';
 
-
-class ResultFiveYearsLaterScene {
+export default class ResultFiveYearsLaterScene {
   constructor(renderer, camera, sceneManager) {
     this.renderer = renderer;
     this.camera = camera;
@@ -14,10 +14,14 @@ class ResultFiveYearsLaterScene {
     this.camera.position.set(0, 1.6, 5);
     this.camera.lookAt(0, 1.6, 0);
     document.getElementById('fail-ui').style.display = 'block';
+    setTimeout(() => {
+      this.sceneManager.transitionTo('ending');
+    }, 1000); // 1초 후 자동 전환
   }
 
   onExit() {
-    document.getElementById('fail-ui').style.display = 'none';
+    const ui = document.getElementById('fail-ui');
+    if (ui) ui.remove();
   }
 
   update() {}

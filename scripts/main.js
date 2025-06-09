@@ -10,6 +10,10 @@ import SceneTVCount from './scenes/SceneTVCount.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
+import EndingScene from './scenes/EndingScene.js';
+import ResultBroadcastScene from './scenes/ResultBroadcastScene.js';
+import ResultVictoryScene from './scenes/ResultVictoryScene.js';
+import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
 // import SceneEarlyVote from './scenes/SceneEarlyVote.js';
 // import SceneMainVote from './scenes/SceneMainVote.js';
 
@@ -54,18 +58,16 @@ window.addEventListener('DOMContentLoaded', () => {
   window.renderer = renderer; // 렌더러도 전역에 노출
 
   // 4) 씬 인스턴스 생성 및 등록
-  const menuScene = new SceneMenu(renderer, camera, sceneManager);
-  const votingBoothScene = new SceneVotingBooth(renderer, camera, sceneManager);
-  const tvCountScene = new SceneTVCount(renderer, camera, sceneManager);
-  const candidateCampScene = new SceneCandidateCamp(renderer, camera, sceneManager);
-
-  sceneManager.addScene('menu', menuScene);
-  sceneManager.addScene('votingBooth', votingBoothScene);
-  sceneManager.addScene('tvCount', tvCountScene);
-  sceneManager.addScene('candidateCamp', candidateCampScene);
-
-  // 5) 최초 씬 설정: 메뉴 화면
-  sceneManager.transitionTo('menu');
+  sceneManager.addScene('intro', () => new SceneIntro(renderer, camera, sceneManager));
+  sceneManager.addScene('votingBooth', () => new SceneVotingBooth(renderer, camera, sceneManager));
+  sceneManager.addScene('tvCount', () => new SceneTVCount(renderer, camera, sceneManager));
+  sceneManager.addScene('voteChoice', () => new SceneVoteChoice(renderer, camera, sceneManager));
+  sceneManager.addScene('home', () => new SceneHome(renderer, camera, sceneManager));
+  sceneManager.addScene('returnHome', () => new SceneReturnHome(renderer, camera, sceneManager));
+  sceneManager.addScene('ending', () => new EndingScene(renderer, camera, sceneManager));
+  sceneManager.addScene('resultBroadcast', () => new ResultBroadcastScene(renderer, camera, sceneManager));
+  sceneManager.addScene('resultVictory', () => new ResultVictoryScene(renderer, camera, sceneManager));
+  sceneManager.addScene('resultFiveYearsLater', () => new ResultFiveYearsLaterScene(renderer, camera, sceneManager));
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
