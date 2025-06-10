@@ -98,7 +98,6 @@ export default class SceneMainVote {
             <div>마우스 좌클릭+드래그: 카메라 회전</div>
             <div>H: 씬 hierarchy 출력 (콘솔 확인)</div>
         `;
-        document.body.appendChild(this.helpUI);
         
         // 호버 라벨 UI 추가
         this.hoverLabel = document.createElement('div');
@@ -114,7 +113,6 @@ export default class SceneMainVote {
             z-index: 2000;
             display: none;
         `;
-        document.body.appendChild(this.hoverLabel);
     }
 
     _loadEnvironmentAndCharacters() {
@@ -581,6 +579,10 @@ export default class SceneMainVote {
         this.cameraRotation.vertical = 0;
         this._applyCameraRotation();
         
+        // UI를 DOM에 추가
+        document.body.appendChild(this.helpUI);
+        document.body.appendChild(this.hoverLabel);
+        
         // 이벤트 리스너 등록
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
@@ -589,9 +591,6 @@ export default class SceneMainVote {
         window.addEventListener('mouseup', this.onMouseUp);
         window.addEventListener('contextmenu', this.onContextMenu);
         window.addEventListener('click', this.onMouseClick);
-        
-        // UI 표시
-        this.helpUI.style.display = 'block';
         
         // 씬 hierarchy 자동 출력 (3초 후 - 모델들이 로드된 후)
         setTimeout(() => {
@@ -610,8 +609,13 @@ export default class SceneMainVote {
         window.removeEventListener('contextmenu', this.onContextMenu);
         window.removeEventListener('click', this.onMouseClick);
         
-        // UI 숨김
-        this.helpUI.style.display = 'none';
+        // UI를 DOM에서 제거
+        if (this.helpUI.parentNode) {
+            this.helpUI.parentNode.removeChild(this.helpUI);
+        }
+        if (this.hoverLabel.parentNode) {
+            this.hoverLabel.parentNode.removeChild(this.hoverLabel);
+        }
         
         // 하이라이트 및 호버 라벨 정리
         this._clearHighlight();
