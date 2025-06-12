@@ -94,7 +94,7 @@ export default class SceneHome {
     
     envModelLoader.loadEnvironmentModel(
       'bedroom',
-      ['./assets/models/bedroom.glb'],
+      ['./assets/models/new-bedroom.glb'],
       this.scene,
       (modelRoot) => {
         // 로딩 성공 시 호출되는 콜백
@@ -220,7 +220,7 @@ export default class SceneHome {
     // 3) 수동 시작 위치로 덮어쓰기
     const manualStart = new THREE.Vector3(104.98, 50, 499.92);
     this.camera.position.copy(manualStart);
-    this.camera.lookAt(center);
+    this.camera.lookAt(104.98, 50, 400);
     this.cameraYaw = 0;
     this.cameraPitch = 0;
 
@@ -304,7 +304,7 @@ export default class SceneHome {
 
         // 수동 좌표로 재세팅
         this.camera.position.set(104.98, 50, 499.92);
-        this.camera.lookAt(this.roomInfo.center);
+        this.camera.lookAt(104.98, 50, 400);
         console.log('📷 startScene: 수동 카메라 위치 재세팅:', this.camera.position);
 
         // 텍스트 페이드인/out 등
@@ -838,7 +838,7 @@ export default class SceneHome {
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
         const respawnPosition = new THREE.Vector3(104.98, 50, 499.92);
         this.camera.position.copy(respawnPosition);
-        this.camera.lookAt(this.roomInfo.center);
+        this.camera.lookAt(104.98, 50, 400);
         this.cameraYaw = 0;
         this.cameraPitch = 0;
         this._updateCameraRotation();
