@@ -87,11 +87,13 @@ export default class ResultBroadcastScene {
         this.candidateMixers.push(mixer);
 
         if (gltf.animations && gltf.animations.length > 0) {
-          const animIndex = i % gltf.animations.length;
-          const action = mixer.clipAction(gltf.animations[animIndex]);
-          action.clampWhenFinished = true;
-          action.loop = THREE.LoopOnce;
-          this.candidateActions.push(action);
+          const actions = gltf.animations.map((clip) => {
+            const action = mixer.clipAction(clip);
+            action.clampWhenFinished = true;
+            action.loop = THREE.LoopOnce;
+            return action;
+          });
+          this.candidateActions.push(actions);
         }
       });
 
@@ -111,7 +113,7 @@ export default class ResultBroadcastScene {
     const div = document.createElement('div');
     div.id = 'result-ui';
     div.style.position = 'absolute';
-    div.style.top = '65%';
+    div.style.top = '80%';
     div.style.left = '50%';
     div.style.transform = 'translate(-50%, -50%)';
     div.style.backgroundColor = 'rgba(0,0,0,0.8)';
@@ -137,8 +139,12 @@ export default class ResultBroadcastScene {
       if ([' ', 'Enter'].includes(e.key)) {
         this.keyPressCount++;
         if (this.candidateActions) {
-          this.candidateActions.forEach(action => {
-            action.reset().play();
+          this.candidateActions.forEach((actions, i) => {
+            const action = Array.isArray(actions)
+              ? actions[this.keyPressCount % actions.length]
+              : actions;
+            action.reset();
+            action.play();
           });
         }
       }
