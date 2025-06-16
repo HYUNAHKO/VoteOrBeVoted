@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { EnvModelLoader, CharacterModelLoader } from '../utils/processImport.js';
+import CollisionControl from '../utils/collisionControl.js';
 
 export default class SceneEarlyVote {
     constructor(renderer, camera, sceneManager) {
@@ -7,6 +8,10 @@ export default class SceneEarlyVote {
         this.camera = camera;
         this.sceneManager = sceneManager;
         this.scene = new THREE.Scene();
+
+        // 충돌 체크 시스템
+        this.collisionControl = new CollisionControl(this.camera);
+        this.collisionControl.setCollisionDistance(3.0);
         
         // 모델 로더들
         this.envModelLoader = new EnvModelLoader();
@@ -23,7 +28,7 @@ export default class SceneEarlyVote {
         this.previousMousePosition = { x: 0, y: 0 };
         this.cameraRotation = { horizontal: 0, vertical: 0 }; // 현재 회전 각도
         this.rotationLimits = {
-            horizontal: { min: -Math.PI / 3, max: Math.PI / 2 }, // ±60도
+            horizontal: { min: -Math.PI / 2, max: Math.PI / 2 }, // ±60도
             vertical: { min: -Math.PI / 6, max: Math.PI / 3 }     // ±30도
         };
         this.rotationSpeed = 0.002;
@@ -41,7 +46,7 @@ export default class SceneEarlyVote {
         this.highlightMaterial = new THREE.MeshBasicMaterial({ 
             color: 0xffff00, 
             transparent: true, 
-            opacity: 0.5 
+            opacity: 0.9 
         });
         
         this._initScene();
@@ -133,7 +138,8 @@ export default class SceneEarlyVote {
                 // earlyVote.glb 모델 설정
                 modelRoot.scale.set(3, 3, 3);
                 modelRoot.rotation.y = Math.PI / 2; // 90도 회전
-                
+
+                this.collisionControl.addCollidableModel(modelRoot);
                 // 환경 모델 로드 완료 후 캐릭터들 로드
                 this._loadCharacters();
                 
@@ -250,7 +256,9 @@ export default class SceneEarlyVote {
                         root: characterRoot,
                         config: config
                     });
-                    
+
+                    this.collisionControl.addCollidableModel(characterRoot);
+
                     // 캐릭터 로드 완료 후 상호작용 가능한 오브젝트 다시 찾기 (SkinnedMesh 포함)
                     setTimeout(() => {
                         this._findInteractableObjects();
@@ -506,13 +514,35 @@ export default class SceneEarlyVote {
                     const rawObjectName = targetParent.name || 'Unknown Object';
                     const displayName = this._getDisplayName(rawObjectName);
                     this._showHoverLabel(event, displayName);
+                    
+                    // 호버된 오브젝트 정보 저장 및 콘솔 출력
+                    this._logHoveredObject(targetParent, displayName, distance);
+                    
                     return;
                 }
             }
         }
         
-        // 호버 대상이 없으면 라벨 숨김
+        // 호버 대상이 없으면 라벨 숨김 및 현재 호버 오브젝트 초기화
         this._hideHoverLabel();
+        this.currentHoveredObject = null;
+    }
+
+    _logHoveredObject(targetObject, displayName, distance) {
+        // 현재 호버 중인 오브젝트가 변경된 경우에만 로깅
+        if (this.currentHoveredObject !== targetObject) {
+            this.currentHoveredObject = targetObject;
+            
+            // 콘솔에 호버된 오브젝트 정보 출력
+            console.log('=== HOVERED OBJECT ===');
+            console.log(`Display Name: ${displayName}`);
+            console.log(`Object Name: ${targetObject.name || 'unnamed'}`);
+            console.log(`Object Type: ${targetObject.constructor.name}`);
+            console.log(`Distance: ${distance.toFixed(2)}`);
+            console.log(`Position:`, targetObject.position);
+            console.log(`Object:`, targetObject);
+            console.log('======================');
+        }
     }
 
     _applyHighlightToGroup(parentObject) {
@@ -558,8 +588,6 @@ export default class SceneEarlyVote {
         this.hoverLabel.style.display = 'none';
     }
 
-
-
     _updateMovement() {
         const direction = new THREE.Vector3();
         
@@ -585,7 +613,10 @@ export default class SceneEarlyVote {
             movement.addScaledVector(right, direction.x * this.moveSpeed);           // 좌우
             movement.y = 0; // Y축 이동 제한
             
-            this.camera.position.add(movement);
+            // 충돌 체크 후 이동
+            if (this.collisionControl.preventCollision(movement)) {
+                this.camera.position.add(movement);
+            }
         }
     }
 

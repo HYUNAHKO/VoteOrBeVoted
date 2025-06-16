@@ -14,8 +14,8 @@ import EndingScene from './scenes/EndingScene.js';
 import ResultBroadcastScene from './scenes/ResultBroadcastScene.js';
 import ResultVictoryScene from './scenes/ResultVictoryScene.js';
 import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
-// import SceneEarlyVote from './scenes/SceneEarlyVote.js';
-// import SceneMainVote from './scenes/SceneMainVote.js';
+import SceneEarlyVote from './scenes/SceneEarlyVote.js';
+import SceneMainVote from './scenes/SceneMainVote.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   THREE.ColorManagement.enabled = true;
@@ -68,12 +68,14 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('resultBroadcast', () => new ResultBroadcastScene(renderer, camera, sceneManager));
   sceneManager.addScene('resultVictory', () => new ResultVictoryScene(renderer, camera, sceneManager));
   sceneManager.addScene('resultFiveYearsLater', () => new ResultFiveYearsLaterScene(renderer, camera, sceneManager));
+  sceneManager.addScene('earlyVote', () => new SceneEarlyVote(renderer, camera, sceneManager));
+  sceneManager.addScene('mainVote', () => new SceneMainVote(renderer, camera, sceneManager));
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
 
   // 6) 최초 씬 설정
-  sceneManager.transitionTo('home');
+  sceneManager.transitionTo('earlyVote');
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {

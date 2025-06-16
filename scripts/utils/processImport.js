@@ -254,7 +254,7 @@ export class EnvModelLoader {
                 info += ` [Camera]`;
             }
             
-            console.log(info);
+            // console.log(info);
             
             // 자식 객체들 재귀적으로 출력
             if (object.children && object.children.length > 0) {
