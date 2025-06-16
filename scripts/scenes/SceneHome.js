@@ -94,7 +94,7 @@ export default class SceneHome {
     
     envModelLoader.loadEnvironmentModel(
       'bedroom',
-      ['./assets/models/bedroom.glb'],
+      ['./assets/models/new-bedroom.glb'],
       this.scene,
       (modelRoot) => {
         // 로딩 성공 시 호출되는 콜백
@@ -122,6 +122,9 @@ export default class SceneHome {
       }
     });
 
+    // TV 비디오 추가
+    this._setupTVVideoOverlay();
+
     // sRGB 인코딩 강제 설정
     this.bedroomModel.traverse(child => {
       if (child.isMesh && child.material.map) {
@@ -134,6 +137,120 @@ export default class SceneHome {
     this._adjustEnvironmentForAsset();
     this._autoPositionCameraInside();
     this.assetsLoaded = true;
+  }
+  // TV 화면 4개 꼭짓점 좌표로 정확한 비디오 화면 생성
+  _setupTVVideoOverlay() {
+    console.log('📺 정확한 TV 좌표로 비디오 화면 생성...');
+    
+    // 🎬 비디오 생성
+    const video = document.createElement('video');
+    video.src = './assets/videos/aespa.mp4';
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = true;
+    
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.colorSpace = THREE.SRGBColorSpace;
+    
+    // TV 화면 4개 꼭짓점 좌표
+    const corners = {
+      bottomLeft:  { x: 117.75, y: 35, z: 315.13 },
+      bottomRight: { x: 197.69, y: 35, z: 314.83 },
+      topLeft:     { x: 117.75, y: 80, z: 315.13 },
+      topRight:    { x: 197.69, y: 80, z: 314.83 }
+    };
+    
+    // Geometry 생성
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      corners.bottomLeft.x,  corners.bottomLeft.y,  corners.bottomLeft.z,
+      corners.bottomRight.x, corners.bottomRight.y, corners.bottomRight.z,
+      corners.topLeft.x,     corners.topLeft.y,     corners.topLeft.z,
+      corners.bottomRight.x, corners.bottomRight.y, corners.bottomRight.z,
+      corners.topRight.x,    corners.topRight.y,    corners.topRight.z,
+      corners.topLeft.x,     corners.topLeft.y,     corners.topLeft.z
+    ]);
+    
+    const uvs = new Float32Array([
+      0, 0,  1, 0,  0, 1,
+      1, 0,  1, 1,  0, 1
+    ]);
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.computeVertexNormals();
+    
+    // Material 생성
+    const videoMaterial = new THREE.MeshBasicMaterial({
+      map: videoTexture,
+      side: THREE.DoubleSide
+    });
+    
+    // Mesh 생성 
+    const videoScreen = new THREE.Mesh(geometry, videoMaterial);
+    this.scene.add(videoScreen);
+    
+    // 이제 videoScreen이 선언된 후에 함수 호출!
+    this._setupTVClickSound(video, videoScreen);
+    
+    // 비디오 이벤트
+    video.addEventListener('loadeddata', () => {
+      console.log('🎥 TV Video loaded successfully');
+      videoTexture.needsUpdate = true;
+    });
+    
+    video.addEventListener('error', (e) => {
+      console.error('❌ TV Video error:', e);
+      const errorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      videoScreen.material = errorMaterial;
+    });
+    
+    // 비디오 로드 및 재생
+    video.load();
+    video.play().then(() => {
+      console.log('▶️ TV Video started (muted)');
+    }).catch(error => {
+      console.warn('⚠️ TV Video auto-play failed:', error);
+    });
+    
+    // 클래스 변수에 저장
+    this.tvVideo = video;
+    this.tvVideoTexture = videoTexture;
+    this.tvVideoScreen = videoScreen;
+    
+    console.log('✅ TV 비디오 화면 생성 완료 (소리 기능 포함)');
+  }
+
+  // 🎵 TV 화면 클릭 감지 함수 
+  _setupTVClickSound(video, videoScreen) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    const onTVClick = (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, this.camera);
+      const intersects = raycaster.intersectObject(videoScreen);
+      
+      if (intersects.length > 0) {
+        if (video.muted) {
+          video.muted = false;
+          console.log('🔊 TV 화면 클릭 → 소리 켜짐');
+          this._showSoundNotification('🔊 TV 소리가 켜졌습니다!', '#4caf50');
+        } else {
+          video.muted = true;
+          console.log('🔇 TV 화면 클릭 → 소리 꺼짐');
+          this._showSoundNotification('🔇 TV 소리가 꺼졌습니다!', '#f44336');
+        }
+      }
+    };
+    
+    window.addEventListener('click', onTVClick);
+    this.tvClickHandler = onTVClick;
   }
 
   _optimizeLoadedAsset() {
@@ -220,7 +337,7 @@ export default class SceneHome {
     // 3) 수동 시작 위치로 덮어쓰기
     const manualStart = new THREE.Vector3(104.98, 50, 499.92);
     this.camera.position.copy(manualStart);
-    this.camera.lookAt(center);
+    this.camera.lookAt(104.98, 50, 400);
     this.cameraYaw = 0;
     this.cameraPitch = 0;
 
@@ -259,8 +376,9 @@ export default class SceneHome {
       backdropFilter: 'blur(5px)'
     });
     this.textOverlay.innerHTML = `
-      🏠 집에서 뒹굴거리면서 투표나 해볼까?<br/>
+      🏠 집에서 TV 보다가 투표하러 가볼까?<br/>
       <div style="font-size: 16px; margin-top: 15px; color: #ccc;">
+        📺️ TV 클릭해서 소리 켜기 <br/>
         📱 핸드폰을 클릭해서 투표하기<br/>
         🎮 WASD로 이동 + 우클릭 드래그로 시점 변경
       </div>
@@ -304,7 +422,7 @@ export default class SceneHome {
 
         // 수동 좌표로 재세팅
         this.camera.position.set(104.98, 50, 499.92);
-        this.camera.lookAt(this.roomInfo.center);
+        this.camera.lookAt(104.98, 50, 400);
         console.log('📷 startScene: 수동 카메라 위치 재세팅:', this.camera.position);
 
         // 텍스트 페이드인/out 등
@@ -838,7 +956,7 @@ export default class SceneHome {
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
         const respawnPosition = new THREE.Vector3(104.98, 50, 499.92);
         this.camera.position.copy(respawnPosition);
-        this.camera.lookAt(this.roomInfo.center);
+        this.camera.lookAt(104.98, 50, 400);
         this.cameraYaw = 0;
         this.cameraPitch = 0;
         this._updateCameraRotation();

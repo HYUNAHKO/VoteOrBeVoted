@@ -73,7 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.renderLoop();
 
   // 6) 최초 씬 설정
-  sceneManager.transitionTo('intro');
+  sceneManager.transitionTo('home');
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {
