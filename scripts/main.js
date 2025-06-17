@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import SceneIntro from './scenes/SceneIntro.js';
 import SceneManager from './SceneManager.js';
 import SceneVotingBooth from './scenes/SceneVotingBooth.js';
-import SceneTVCount from './scenes/SceneTVCount.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
@@ -60,7 +59,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // 4) 씬 인스턴스 생성 및 등록
   sceneManager.addScene('intro', () => new SceneIntro(renderer, camera, sceneManager));
   sceneManager.addScene('votingBooth', () => new SceneVotingBooth(renderer, camera, sceneManager));
-  sceneManager.addScene('tvCount', () => new SceneTVCount(renderer, camera, sceneManager));
   sceneManager.addScene('voteChoice', () => new SceneVoteChoice(renderer, camera, sceneManager));
   sceneManager.addScene('home', () => new SceneHome(renderer, camera, sceneManager));
   sceneManager.addScene('returnHome', () => new SceneReturnHome(renderer, camera, sceneManager));
@@ -75,7 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.renderLoop();
 
   // 6) 최초 씬 설정
-  sceneManager.transitionTo('earlyVote');
+  sceneManager.transitionTo('mainVote'); 
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {

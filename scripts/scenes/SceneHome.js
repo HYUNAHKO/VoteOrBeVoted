@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { envModelLoader } from '../utils/processImport.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import CollisionControl from '../utils/collisionControl.js';
 
 export default class SceneHome {
   constructor(renderer, camera, sceneManager) {
@@ -13,6 +14,10 @@ export default class SceneHome {
     // 초기화 상태 추적
     this.initialized = false;
     
+    // 충돌 체크 시스템 추가
+    this.collisionControl = new CollisionControl(this.camera);
+    this.collisionControl.setCollisionDistance(1.5);
+
     // 무거운 객체들을 나중에 생성
     this.mixer = null;
     this.labelRenderer = null;
@@ -28,7 +33,7 @@ export default class SceneHome {
     this.assetsLoaded = false;
     this.phoneGlow = null;
     
-    // 이동 조작 변수들 (가벼움)
+    // 이동 조작 변수들 
     this.moveForward = false;
     this.moveBackward = false;
     this.moveLeft = false;
@@ -42,7 +47,7 @@ export default class SceneHome {
     // 방 정보 (나중에 설정)
     this.roomInfo = null;
     
-    // 이벤트 리스너 함수들 미리 바인딩 (가벼운 작업)
+    // 이벤트 리스너 함수들 미리 바인딩 
     this._setupControlFunctions();
     
     console.log('SceneHome constructor completed (lightweight)');
@@ -75,6 +80,14 @@ export default class SceneHome {
     console.log('✅ SceneHome 초기화 완료');
   }
 
+  // 방 내부에 충돌 가능한 오브젝트 등록
+  _registerCollidableObjects() {
+    if (this.bedroomModel) {
+      this.collisionControl.addCollidableModel(this.bedroomModel);
+      console.log('✅ 충돌 가능한 오브젝트 등록 완료');
+    }
+  }
+  
   _createLabelRenderer() {
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.domElement.style.position = 'absolute';
@@ -100,6 +113,7 @@ export default class SceneHome {
         // 로딩 성공 시 호출되는 콜백
         this.bedroomModel = modelRoot;
         this._afterLoad();
+        this._registerCollidableObjects();
         console.log('✅ 침실 모델 로딩 완료');
       },
       undefined,
@@ -144,7 +158,7 @@ export default class SceneHome {
     
     // 🎬 비디오 생성
     const video = document.createElement('video');
-    video.src = './assets/videos/aespa.mp4';
+    video.src = './assets/videos/earlyVote.mp4';
     video.crossOrigin = 'anonymous';
     video.muted = true;
     video.playsInline = true;
@@ -224,7 +238,7 @@ export default class SceneHome {
     console.log('✅ TV 비디오 화면 생성 완료 (소리 기능 포함)');
   }
 
-  // 🎵 TV 화면 클릭 감지 함수 
+  // TV 화면 클릭 감지 함수 
   _setupTVClickSound(video, videoScreen) {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -240,11 +254,9 @@ export default class SceneHome {
         if (video.muted) {
           video.muted = false;
           console.log('🔊 TV 화면 클릭 → 소리 켜짐');
-          this._showSoundNotification('🔊 TV 소리가 켜졌습니다!', '#4caf50');
         } else {
           video.muted = true;
           console.log('🔇 TV 화면 클릭 → 소리 꺼짐');
-          this._showSoundNotification('🔇 TV 소리가 꺼졌습니다!', '#f44336');
         }
       }
     };
@@ -288,30 +300,35 @@ export default class SceneHome {
     });
     lightsToRemove.forEach(light => this.scene.remove(light));
     
-    // 훨씬 더 밝은 조명 설정
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    this.scene.background = new THREE.Color(0x87CEEB); 
+
+    // Fog 추가로 더욱 몽환적인 분위기
+    this.scene.fog = new THREE.Fog(0xF5FAFF, 200, 1500);
+    
+    // 부드러운 조명 설정
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     this.scene.add(ambientLight);
     
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    mainLight.position.set(5, 10, 5);
+    // 따뜻한 메인 조명
+    const mainLight = new THREE.DirectionalLight(0xFFF5E6, 0.8);
+    mainLight.position.set(50, 100, 50);
     mainLight.castShadow = true;
+    mainLight.shadow.camera.near = 0.1;
+    mainLight.shadow.camera.far = 500;
+    mainLight.shadow.camera.left = -200;
+    mainLight.shadow.camera.right = 200;
+    mainLight.shadow.camera.top = 200;
+    mainLight.shadow.camera.bottom = -200;
     this.scene.add(mainLight);
     
-    // 추가 보조광
-    const fillLight1 = new THREE.PointLight(0xffffff, 0.8, 20);
-    fillLight1.position.set(-5, 5, 5);
-    this.scene.add(fillLight1);
+    // 보조 조명
+    const fillLight = new THREE.HemisphereLight(0x87CEEB, 0xFFE4B5, 0.6);
+    this.scene.add(fillLight);
     
-    const fillLight2 = new THREE.PointLight(0xffffff, 0.8, 20);
-    fillLight2.position.set(5, 5, -5);
-    this.scene.add(fillLight2);
-    
-    // 환경광
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-    this.scene.add(hemi);
-
-    // 배경색
-    this.scene.background = new THREE.Color(0xffffff);
+    // 렌더러 설정
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMappingExposure = 1.2;
     
     console.log('✅ 환경 조명 설정 완료');
   }
@@ -380,7 +397,7 @@ export default class SceneHome {
       <div style="font-size: 16px; margin-top: 15px; color: #ccc;">
         📺️ TV 클릭해서 소리 켜기 <br/>
         📱 핸드폰을 클릭해서 투표하기<br/>
-        🎮 WASD로 이동 + 우클릭 드래그로 시점 변경
+        🎮 WASD로 이동 + 좌클릭 드래그로 시점 변경
       </div>
     `;
     
@@ -439,6 +456,12 @@ export default class SceneHome {
   onExit() {
     console.log('SceneHome onExit');
     
+    if (this.tvVideo) {
+    this.tvVideo.pause();
+    this.tvVideo.src = '';
+    this.tvVideo.load(); // 혹시 모를 참조 해제를 위해
+    console.log('⏹️ TV 비디오 정지 및 정리 완료');
+  }
     // UI 제거
     if (this.textOverlay && this.textOverlay.parentNode) {
       this.textOverlay.parentNode.removeChild(this.textOverlay);
@@ -449,7 +472,7 @@ export default class SceneHome {
     this._removeControls();
   }
 
-  // 이벤트 리스너 함수들 미리 정의 (가벼운 작업)
+  // 이벤트 리스너 함수들 미리 정의 
   _setupControlFunctions() {
     // 키보드 이벤트
     this.onKeyDown = (event) => {
@@ -485,19 +508,20 @@ export default class SceneHome {
           break;
       }
     };
-    
-    // 마우스 이벤트 (우클릭으로 시점 변경)
+
+    // 마우스 이벤트 (좌클릭으로 시점 변경)
     this.onMouseDown = (event) => {
-      if (event.button === 2) { // 우클릭
+      if (event.button === 0) { // 좌클릭
         this.canLook = true;
         this.prevMouseX = event.clientX;
         this.prevMouseY = event.clientY;
         document.body.style.cursor = 'grab';
+        event.preventDefault(); // 기본 동작 방지
       }
     };
-    
+
     this.onMouseUp = (event) => {
-      if (event.button === 2) {
+      if (event.button === 0) {
         this.canLook = false;
         document.body.style.cursor = 'default';
       }
@@ -525,6 +549,8 @@ export default class SceneHome {
     
     // 클릭 이벤트 (핸드폰 상호작용)
     this.onMouseClick = (event) => {
+      // 카메라 회전 중이면 클릭 무시
+      if (this.canLook) return;
       if (event.button === 0 && this.phoneModel) { // 좌클릭
         this._checkPhoneClick(event);
       }
@@ -1065,7 +1091,6 @@ export default class SceneHome {
     
     container.querySelector('#early').onclick = () => this.sceneManager.transitionTo('earlyVote');
     container.querySelector('#main').onclick = () => this.sceneManager.transitionTo('mainVote');
-    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 -------------------------------------------------------------------
     container.querySelector('#back-vote').onclick = () => {
       this.phoneModel.remove(this.phoneUI);
       this.phoneUI = null;
@@ -1162,7 +1187,7 @@ export default class SceneHome {
     }
     
     // 카메라 위치 업데이트
-    if (moved) {
+    if (moved && this.collisionControl.preventCollision(movement)) {
       this.camera.position.add(movement);
       
       // 이동할 때마다 위치 출력 (디버깅용)
