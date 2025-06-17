@@ -13,7 +13,15 @@ export default class ResultFiveYearsLaterScene {
   onEnter() {
     this.camera.position.set(0, 1.6, 5);
     this.camera.lookAt(0, 1.6, 0);
-    document.getElementById('fail-ui').style.display = 'block';
+    const canvas = document.getElementById('fail-canvas');
+    if (canvas) {
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+      const geometry = new THREE.PlaneGeometry(2, 1);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(0, 1.6, -2); // in front of the camera
+      this.scene.add(mesh);
+    }
     setTimeout(() => {
       this.sceneManager.transitionTo('ending');
     }, 1000); // 1초 후 자동 전환
@@ -47,7 +55,14 @@ export default class ResultFiveYearsLaterScene {
     if (document.getElementById('fail-ui')) return;
     const div = document.createElement('div');
     div.id = 'fail-ui';
-    div.innerHTML = `<h1 style="color: crimson; font-size: 2rem;">💀 낙선하셨습니다. 5년 뒤를 기약하세요.</h1>`;
+    div.innerHTML = `<canvas id="fail-canvas" width="512" height="256" style="display:none"></canvas>`;
+    const ctx = div.querySelector('canvas').getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.font = '28px sans-serif';
+    ctx.fillStyle = 'crimson';
+    ctx.textAlign = 'center';
+    ctx.fillText('💀 낙선하셨습니다. 5년 뒤를 기약하세요.', 256, 130);
     div.style.position = 'absolute';
     div.style.top = '40%';
     div.style.left = '50%';
