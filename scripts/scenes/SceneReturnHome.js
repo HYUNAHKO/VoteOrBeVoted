@@ -338,7 +338,7 @@ export default class SceneReturnHome {
         
         document.getElementById('pass-by').onclick = () => {
             this.modal.style.display = 'none';
-            this.sceneManager.transitionTo('tvCount'); // 씬 이름 수정
+            this.sceneManager.transitionTo('resultBroadcast'); // 씬 이름 수정
         };
     }
 
