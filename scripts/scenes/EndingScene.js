@@ -73,7 +73,7 @@ export default class EndingScene {
         this.scene.add(this.introGroup);
 
         const textureLoader = new THREE.TextureLoader();
-        textureLoader.load('/assets/ending_background2.png', (texture) => {
+        textureLoader.load('/assets/textures/ending_background2_extended.png', (texture) => {
           const backgroundMaterial = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
@@ -81,7 +81,7 @@ export default class EndingScene {
             depthWrite: false,
           });
 
-          const backgroundGeometry = new THREE.PlaneGeometry(40, 40);
+          const backgroundGeometry = new THREE.PlaneGeometry(135, 45);
           const backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
           backgroundMesh.position.set(0, -5, -15);
           this.scene.add(backgroundMesh);
