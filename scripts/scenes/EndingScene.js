@@ -47,8 +47,8 @@ export default class EndingScene {
 
     const fontLoader = new FontLoader();
 
-    fontLoader.load('/scripts/fonts/Star Jedi Hollow_Regular.json', (titleFont) => {
-      fontLoader.load('/scripts/fonts/HSJiptokki Black_Regular.json', (bodyFont) => {
+    fontLoader.load('scripts/fonts/Star Jedi Hollow_Regular.json', (titleFont) => {
+      fontLoader.load('scripts/fonts/HSJiptokki Black_Regular.json', (bodyFont) => {
         if (!titleFont || !bodyFont) {
           console.error("폰트 로딩 실패");
           return;
