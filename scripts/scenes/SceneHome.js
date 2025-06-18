@@ -445,6 +445,16 @@ export default class SceneHome {
         // 텍스트 페이드인/out 등
         setTimeout(() => this.textOverlay.style.opacity = '1', 800);
         setTimeout(() => this.textOverlay.style.opacity = '0', 5000);
+
+        // 비디오 재시작
+        if (this.tvVideo) {
+          this.tvVideo.load();
+          this.tvVideo.play().then(() => {
+            console.log('▶️ TV Video 재생 시작');
+          }).catch(err => {
+            console.error('❌ TV Video 재생 실패:', err);
+          });
+        }
       } else {
         setTimeout(startScene, 100);
       }
@@ -458,9 +468,7 @@ export default class SceneHome {
     
     if (this.tvVideo) {
     this.tvVideo.pause();
-    this.tvVideo.src = '';
-    this.tvVideo.load(); // 혹시 모를 참조 해제를 위해
-    console.log('⏹️ TV 비디오 정지 및 정리 완료');
+    console.log('⏹️ TV 비디오 정지 완료');
   }
     // UI 제거
     if (this.textOverlay && this.textOverlay.parentNode) {
@@ -1035,7 +1043,7 @@ export default class SceneHome {
       
       if (hasBadWord) {
         // 처벌 메시지와 함께 리스폰 위치 설정
-        this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다. 메인 화면으로 돌아갑니다.');
+        this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다.');
           
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
         const respawnPosition = new THREE.Vector3(104.98, 50, 499.92);
@@ -1146,12 +1154,25 @@ export default class SceneHome {
       <button id="main" style="width:100%;padding:10px;margin:8px 0;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;">본 투표일</button>
       <button id="back-vote" style="margin-top:12px;padding:8px;background:#aaa;color:#fff;border:none;border-radius:4px;cursor:pointer;">뒤로</button>
     `;
-    
-    container.querySelector('#early').onclick = () => this.sceneManager.transitionTo('earlyVote');
-    container.querySelector('#main').onclick = () => this.sceneManager.transitionTo('mainVote');
+
+    const removeUI = () => {
+      if (this.phoneUI) {
+        this.phoneModel.remove(this.phoneUI);
+        this.phoneUI = null;
+      }
+      this._hideWarningUI();
+    };
+
+    container.querySelector('#early').onclick = () => {
+      removeUI();
+      this.sceneManager.transitionTo('earlyVote');
+    };
+    container.querySelector('#main').onclick = () => {
+      removeUI();
+      this.sceneManager.transitionTo('mainVote');
+    };
     container.querySelector('#back-vote').onclick = () => {
-      this.phoneModel.remove(this.phoneUI);
-      this.phoneUI = null;
+      removeUI();
       this._showPhoneUI();
     };
   }
@@ -1285,24 +1306,24 @@ export default class SceneHome {
     });
     this.phoneModel = new THREE.Mesh(phoneGeometry, phoneMaterial);
 
-    // 1) 스케일 조정 (30배)
+    // 스케일 조정 
     const scaleFactor = 30;
     this.phoneModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-    // 2) 폰을 가로로 눕히기 (X축 90도 회전)
+    // 폰을 가로로 눕히기 (X축 90도 회전)
     this.phoneModel.rotation.x = -Math.PI / 2;
 
-    // 3) 수동 위치 설정
+    // 수동 위치 설정
     const manualPhonePos = new THREE.Vector3(146.46, 25, 382.79);
     this.phoneModel.position.copy(manualPhonePos);
     console.log('📱 수동 핸드폰 위치 및 방향 설정:', manualPhonePos, this.phoneModel.rotation);
 
-    // 4) 그림자 및 클릭 이벤트 설정
+    // 그림자 및 클릭 이벤트 설정
     this.phoneModel.castShadow = true;
     this.phoneModel.userData = { clickable: true, action: 'phoneCheck' };
     this.scene.add(this.phoneModel);
 
-    // 5) 글로우 효과 생성 (크기 확대)
+    // 글로우 효과 생성 (크기 확대)
     const glowRadius = 0.5;
     const glowGeometry = new THREE.SphereGeometry(glowRadius, 8, 8);
     const glowMaterial = new THREE.MeshBasicMaterial({
