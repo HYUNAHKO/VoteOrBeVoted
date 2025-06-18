@@ -7,6 +7,14 @@ export default class Candidate {
     this.model.position.set(0, 0, 0); // default position
     this.animationClips = animationClips;
     this.mixer = new THREE.AnimationMixer(model);
+    // 초기 상태: 첫 애니메이션을 3초 지점으로 미리 반영 (프리즈)
+    if (this.animationClips.length > 0) {
+      const initAction = this.mixer.clipAction(this.animationClips[0]);
+      initAction.reset();
+      initAction.play();
+      initAction.time = 3;      // 3초 지점으로 이동
+      initAction.paused = true;  // 재생 프리즈
+    }
     this.currentAction = null;
     this.currentClipIndex = 0;
     // 잠금 플래그: true일 때 playNextHitAnimation 무시
