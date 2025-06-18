@@ -95,8 +95,8 @@ export default class SceneHome {
     this.labelRenderer.domElement.style.left = '0';
     this.labelRenderer.domElement.style.width = '100%';
     this.labelRenderer.domElement.style.height = '100%';
-    this.labelRenderer.domElement.style.pointerEvents = 'none';
-    this.labelRenderer.domElement.style.zIndex = '1000';
+    this.labelRenderer.domElement.style.pointerEvents = 'auto';
+    this.labelRenderer.domElement.style.zIndex = '2000';
     document.body.appendChild(this.labelRenderer.domElement);
     
     console.log('📱 CSS2DRenderer 생성 완료');
@@ -511,13 +511,17 @@ export default class SceneHome {
 
     // 마우스 이벤트 (좌클릭으로 시점 변경)
     this.onMouseDown = (event) => {
-      if (event.button === 0) { // 좌클릭
-        this.canLook = true;
-        this.prevMouseX = event.clientX;
-        this.prevMouseY = event.clientY;
-        document.body.style.cursor = 'grab';
-        event.preventDefault(); // 기본 동작 방지
-      }
+      // 오직 좌클릭만 처리
+      if (event.button !== 0) return;
+
+      // UI 요소(버튼, textarea, input) 위 클릭은 3D 카메라 회전 로직에서 제외
+      if (event.target.closest('button, textarea, input')) return;
+
+      this.canLook = true;
+      this.prevMouseX = event.clientX;
+      this.prevMouseY = event.clientY;
+      document.body.style.cursor = 'grab';
+      event.preventDefault();  // 3D 뷰 조작이 필요한 영역에서만 기본 동작 차단
     };
 
     this.onMouseUp = (event) => {
@@ -1025,12 +1029,12 @@ export default class SceneHome {
         return;
       }
       
-      // 🚨 비방 댓글 체크 (더 정확한 체크)
+      // 🚨 비방 댓글 체크 
       const badWords = ['비방', '욕설', '인신공격', '거짓말쟁이', '무능한', '바보', '멍청이', '쓰레기', '개새끼', '병신'];
       const hasBadWord = badWords.some(word => text.includes(word));
       
       if (hasBadWord) {
-        // 🔧 처벌 메시지와 함께 리스폰 위치 설정
+        // 처벌 메시지와 함께 리스폰 위치 설정
         this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다. 메인 화면으로 돌아갑니다.');
           
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
@@ -1347,16 +1351,7 @@ export default class SceneHome {
     
     // CSS2DRenderer 처리
     if (this.labelRenderer) {
-      // Warning UI 상태 확인
-      const hasWarningUI = this.warningUI && 
-                          this.warningUI.element && 
-                          this.warningUI.element.style.display !== 'none';
-      
-      if (hasWarningUI) {
-        this.labelRenderer.domElement.style.pointerEvents = 'auto';
-      } else {
-        this.labelRenderer.domElement.style.pointerEvents = 'none';
-      }
+      this.labelRenderer.domElement.style.pointerEvents = 'auto';
       
       this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
       this.labelRenderer.render(this.scene, this.camera);
