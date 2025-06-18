@@ -6,6 +6,7 @@ import Candidate from '../utils/Candidate.js';
 
 import ProgressResultRenderer from '../utils/ProgressResultRenderer.js';
 import BarUtil from '../utils/bar.js';
+import { GameState } from '../utils/GameState.js';
 
 export default class SceneHome {
   constructor(renderer, camera, sceneManager) {
@@ -270,13 +271,38 @@ export default class SceneHome {
       candidateModel.model.scale.set(0.6, 0.75, 0.6); // Increase Y (height) scale to 0.75
       candidateModel.addToScene(rtScene);
 
-      // --- 후보자 이름 라벨 Sprite 추가 ---
-      // 이름/오프셋 배열
-      const nameLabels = [
-        { text: 'Phong', offsetX: -1 },
-        { text: '이인권', offsetX: 0 },
-        { text: 'Catmull', offsetX: 1 }
-      ];
+      // --- 후보자 이름 라벨 Sprite 추가 (게임 상태에 따라 설정) ---
+      const selected = GameState.selectedCandidate;
+      let nameLabels;
+      switch (selected) {
+        case '이인권':
+          nameLabels = [
+            { text: 'Phong', offsetX: -1 },
+            { text: '이인권', offsetX: 0 },
+            { text: 'Catmull', offsetX: 1 }
+          ];
+          break;
+        case 'Phong':
+          nameLabels = [
+            { text: '이인권', offsetX: -1 },
+            { text: 'Phong', offsetX: 0 },
+            { text: 'Catmull', offsetX: 1 }
+          ];
+          break;
+        case '박후보':
+          nameLabels = [ 
+            { text: 'Phong', offsetX: -1 },
+            { text: 'Catmull', offsetX: 0 },
+            { text: '이인권', offsetX: 1 }
+          ];
+          break;
+        default:
+          nameLabels = [
+            { text: 'Phong', offsetX: -1 },
+            { text: '이인권', offsetX: 0 },
+            { text: 'Catmull', offsetX: 1 }
+          ];
+      }
       const headY = 0.5; // 머리 위 쯤의 높이
       nameLabels.forEach(({ text, offsetX }) => {
         // 캔버스 생성

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { EnvModelLoader, CharacterModelLoader } from '../utils/processImport.js';
 import CollisionControl from '../utils/collisionControl.js';
+import { GameState } from '../utils/GameState.js';
 
 export default class SceneMainVote {
     constructor(renderer, camera, sceneManager) {
@@ -813,7 +814,7 @@ export default class SceneMainVote {
 
         console.log('🗳️ 투표 용지를 받았습니다!');
         this._showCustomAlert('🗳️ 투표 용지를 받았습니다! 투표하세요.');
-        this.ballotReceived = true;  // ◀️ 여기를 추가
+        this.ballotReceived = true;  
     }
 
     _showVoteConfirmUI() {
@@ -838,6 +839,7 @@ export default class SceneMainVote {
         };
         container.querySelector('#vote-no').onclick = () => {
             document.body.removeChild(container);
+            this.voteConfirmShown = false;
         };
     }
 
@@ -903,6 +905,7 @@ export default class SceneMainVote {
             this._showCustomAlert('후보를 선택해주세요.');
             return;
         }
+        GameState.selectedCandidate = sel.value;
         this.selectedCandidate = sel.value;
         this._showCustomAlert(`투표 용지에 ${sel.value} 선택 완료!\n투표함으로 이동하세요.`);
 
@@ -1103,7 +1106,9 @@ export default class SceneMainVote {
         // 씬 강제 종료 (홈 씬으로 전환)
         setTimeout(() => {
             console.log('📸 촬영 시도로 인한 씬 종료');
-            this.sceneManager.transitionTo('home'); // 또는 원하는 다른 씬으로
+            this.ballotReceived = false;  
+            this.voteConfirmShown = false;
+            this.sceneManager.transitionTo('home');
         }, 2000);
     }
 
