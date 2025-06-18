@@ -1,7 +1,11 @@
-// SceneHome.js 
+// ResultBroadcastScene.js
 import * as THREE from 'three';
 import { envModelLoader } from '../utils/processImport.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import Candidate from '../utils/Candidate.js';
+
+import ProgressResultRenderer from '../utils/ProgressResultRenderer.js';
+import BarUtil from '../utils/bar.js';
 
 export default class SceneHome {
   constructor(renderer, camera, sceneManager) {
@@ -9,25 +13,24 @@ export default class SceneHome {
     this.camera = camera;
     this.sceneManager = sceneManager;
     this.scene = new THREE.Scene();
-    
+
+    // Animation clock for candidate mixers
+    this.clock = new THREE.Clock();
+
     // 초기화 상태 추적
     this.initialized = false;
-    
+
     // 무거운 객체들을 나중에 생성
     this.mixer = null;
     this.labelRenderer = null;
     this.textOverlay = null;
     this.bedroomModel = null;
-    this.phoneModel = null;
-    this.phoneUI = null;
-    this.warningUI = null;
-    
     // 가벼운 상태 변수들만 초기화
     this.manualStartPosition = null;
     this.shouldRespawn = false;
     this.assetsLoaded = false;
-    this.phoneGlow = null;
-    
+    this.tvBroadcastStarted = false;
+
     // 이동 조작 변수들 (가벼움)
     this.moveForward = false;
     this.moveBackward = false;
@@ -38,19 +41,52 @@ export default class SceneHome {
     this.prevMouseY = 0;
     this.cameraYaw = 0;
     this.cameraPitch = 0;
-    
+
     // 방 정보 (나중에 설정)
     this.roomInfo = null;
-    
+
+    // 후보자 배열 선언
+    this.candidates = [];
+
+    // tap-and-progress logic
+    this.keyPressCount = 0;
+    this.timeLimit = 5000; // milliseconds
+    this.requiredCount = 30;
+    this.hasHandledResult = false;
+    this._handleKeyTap = (e) => {
+      if (e.code === 'Space') {
+        this.keyPressCount++;
+        console.log('🔘 Space pressed, count =', this.keyPressCount);
+      }
+    };
+
     // 이벤트 리스너 함수들 미리 바인딩 (가벼운 작업)
     this._setupControlFunctions();
-    
-    console.log('SceneHome constructor completed (lightweight)');
+
+    // Space 키 이벤트 리스너 정의
+    this.onSpaceKeyDown = (event) => {
+      if (event.code === 'Space') {
+        if (this.internalCandidate) {
+          this.internalCandidate.playNextHitAnimation();
+        }
+        this.candidates.forEach(candidate => {
+          candidate.playNextHitAnimation();
+        });
+        console.log('▶️ 모든 후보자 애니메이션 재생');
+      }
+    };
+
+    // Progress/results WebGLRenderTarget renderer
+    this.prRenderer = new ProgressResultRenderer(this.renderer, 512, 256);
+
+    this.barUtil = new BarUtil(this.renderer, 512, 256);
+
+    console.log('ResultBroadcastScene constructor completed (lightweight)');
   }
 
   // 무거운 초기화 작업들 (onEnter에서만 실행)
   _init() {
-    console.log('🏠 SceneHome 무거운 초기화 시작...');
+    console.log('🏠 ResultBroadcastScene 무거운 초기화 시작...');
     
     THREE.ColorManagement.enabled = true;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -59,7 +95,7 @@ export default class SceneHome {
 
     // 1) CSS2DRenderer 생성 (무거운 작업)
     this._createLabelRenderer();
-    
+
     // 2) 배경 설정
     this.scene.background = new THREE.Color(0x1a1a1a);
     
@@ -72,8 +108,9 @@ export default class SceneHome {
     // 5) 3D 모델 로딩 (가장 무거운 작업)
     this._loadBedroomModel();
     
-    console.log('✅ SceneHome 초기화 완료');
+    console.log('✅ ResultBroadcastScene 초기화 완료');
   }
+
 
   _createLabelRenderer() {
     this.labelRenderer = new CSS2DRenderer();
@@ -122,14 +159,6 @@ export default class SceneHome {
       }
     });
 
-    // --- TV 오브젝트 구조 로그 추가 (TV 메시 이름 찾기) ---
-    this.bedroomModel.traverse((child) => {
-      if (child.isMesh) {
-        console.log("Mesh:", child.name);
-      }
-    });
-    // ---------------------------------------------------
-
     // TV 비디오 추가
     this._setupTVVideoOverlay();
 
@@ -141,65 +170,22 @@ export default class SceneHome {
       }
     });
 
-    // --- TV에 캐릭터 넣기 예시 (TV_Screen 이름 가정) ---
-    // 실제 TV mesh 이름으로 "TV_Screen"을 교체
-    const tv = this.bedroomModel.getObjectByName("TV_Screen");
-    if (tv) {
-      // characterFactory()는 예시입니다. 실제 캐릭터 로딩/생성 함수로 교체하세요.
-      const characterFactory = () => {
-        // 임시: 구체로 대체 (실제 캐릭터 모델로 교체)
-        const geo = new THREE.SphereGeometry(0.05, 16, 16);
-        const mat = new THREE.MeshStandardMaterial({ color: 0xff5599 });
-        return new THREE.Mesh(geo, mat);
-      };
-      const character1 = characterFactory();
-      const character2 = characterFactory();
-      const character3 = characterFactory();
-
-      // TV 위치에 맞게 캐릭터 배치 (좌표는 상황에 맞게 수정)
-      character1.position.set(tv.position.x, tv.position.y + 0.2, tv.position.z);
-      character2.position.set(tv.position.x + 0.2, tv.position.y + 0.2, tv.position.z);
-      character3.position.set(tv.position.x - 0.2, tv.position.y + 0.2, tv.position.z);
-
-      tv.add(character1);
-      tv.add(character2);
-      tv.add(character3);
-
-      console.log('👾 3 캐릭터 TV에 추가 완료');
-    }
-    // ---------------------------------------------------
-
     // 기존 환경 셋업 호출
     this._adjustEnvironmentForAsset();
     this._autoPositionCameraInside();
     this.assetsLoaded = true;
   }
-  // TV 화면 4개 꼭짓점 좌표로 정확한 비디오 화면 생성
+  // TV 화면 4개 꼭짓점 좌표로 정확한 렌더타겟 화면 생성
   _setupTVVideoOverlay() {
-    console.log('📺 정확한 TV 좌표로 비디오 화면 생성...');
-    
-    // 🎬 비디오 생성
-    const video = document.createElement('video');
-    video.src = './assets/videos/aespa.mp4';
-    video.crossOrigin = 'anonymous';
-    video.muted = true;
-    video.playsInline = true;
-    video.loop = true;
-    
-    const videoTexture = new THREE.VideoTexture(video);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.colorSpace = THREE.SRGBColorSpace;
-    
-    // TV 화면 4개 꼭짓점 좌표
+    console.log('📺 정확한 TV 좌표로 렌더타겟 화면 생성...');
+
     const corners = {
       bottomLeft:  { x: 117.75, y: 35, z: 315.13 },
       bottomRight: { x: 197.69, y: 35, z: 314.83 },
       topLeft:     { x: 117.75, y: 80, z: 315.13 },
       topRight:    { x: 197.69, y: 80, z: 314.83 }
     };
-    
-    // Geometry 생성
+
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array([
       corners.bottomLeft.x,  corners.bottomLeft.y,  corners.bottomLeft.z,
@@ -209,85 +195,150 @@ export default class SceneHome {
       corners.topRight.x,    corners.topRight.y,    corners.topRight.z,
       corners.topLeft.x,     corners.topLeft.y,     corners.topLeft.z
     ]);
-    
+
     const uvs = new Float32Array([
       0, 0,  1, 0,  0, 1,
       1, 0,  1, 1,  0, 1
     ]);
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     geometry.computeVertexNormals();
-    
-    // Material 생성
-    const videoMaterial = new THREE.MeshBasicMaterial({
-      map: videoTexture,
+
+    const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+    const screenMesh = new THREE.Mesh(geometry, blackMaterial); // Ensure black material assigned initially
+    this.scene.add(screenMesh);
+
+    // Create an overlay mesh matching the TV screen plane
+    const overlayGeom = geometry.clone();
+    const overlayMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0
+    });
+    const overlayMesh = new THREE.Mesh(overlayGeom, overlayMat);
+    // Always render overlay on top
+    overlayMesh.renderOrder = 999;
+    overlayMesh.material.depthTest = false;
+    // Match transform of the TV screen
+    overlayMesh.position.copy(screenMesh.position);
+    overlayMesh.rotation.copy(screenMesh.rotation);
+    overlayMesh.scale.copy(screenMesh.scale);
+    // Add to scene and use for bar parenting
+    this.scene.add(overlayMesh);
+    this.overlayPlane = overlayMesh;
+
+
+    // 내부 렌더타겟 준비
+    const rtWidth = 512;
+    const rtHeight = 512;
+    const renderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
+    const rtCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    rtCamera.position.set(0, 0, 5);
+    const rtScene = new THREE.Scene();
+
+    // 내부 객체들 (후보자 3D 모델)
+    const rtLight = new THREE.AmbientLight(0xffffff, 1);
+    rtScene.add(rtLight);
+
+    Candidate.loadFromGLB('assets/models/three_candidates.glb').then((candidateModel) => {
+      candidateModel.setPosition(new THREE.Vector3(0, -1, 0));
+      candidateModel.model.scale.set(0.6, 0.75, 0.6); // Increase Y (height) scale to 0.75
+      candidateModel.addToScene(rtScene);
+      this.internalCandidate = candidateModel;
+    }).catch(err => {
+      console.error('❌ 후보자 모델 로딩 실패:', err);
+    });
+
+    this.internalScene = rtScene;
+    this.internalCamera = rtCamera;
+    this.internalRenderTarget = renderTarget;
+    this.tvRenderTargetMaterial = new THREE.MeshBasicMaterial({
+      map: renderTarget.texture,
       side: THREE.DoubleSide
     });
-    
-    // Mesh 생성 
-    const videoScreen = new THREE.Mesh(geometry, videoMaterial);
-    this.scene.add(videoScreen);
-    
-    // 이제 videoScreen이 선언된 후에 함수 호출!
-    this._setupTVClickSound(video, videoScreen);
-    
-    // 비디오 이벤트
-    video.addEventListener('loadeddata', () => {
-      console.log('🎥 TV Video loaded successfully');
-      videoTexture.needsUpdate = true;
-    });
-    
-    video.addEventListener('error', (e) => {
-      console.error('❌ TV Video error:', e);
-      const errorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-      videoScreen.material = errorMaterial;
-    });
-    
-    // 비디오 로드 및 재생
-    video.load();
-    video.play().then(() => {
-      console.log('▶️ TV Video started (muted)');
-    }).catch(error => {
-      console.warn('⚠️ TV Video auto-play failed:', error);
-    });
-    
-    // 클래스 변수에 저장
-    this.tvVideo = video;
-    this.tvVideoTexture = videoTexture;
-    this.tvVideoScreen = videoScreen;
-    
-    console.log('✅ TV 비디오 화면 생성 완료 (소리 기능 포함)');
-  }
 
-  // 🎵 TV 화면 클릭 감지 함수 
-  _setupTVClickSound(video, videoScreen) {
+    // --- Use progress/result renderer for the TV screen ---
+    // use progress renderer texture initially
+    screenMesh.material = new THREE.MeshBasicMaterial({
+      map: this.prRenderer.renderToTexture(),
+      side: THREE.DoubleSide
+    });
+
+    // --- TV interaction logic ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    
     const onTVClick = (event) => {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
       raycaster.setFromCamera(mouse, this.camera);
-      const intersects = raycaster.intersectObject(videoScreen);
-      
-      if (intersects.length > 0) {
-        if (video.muted) {
-          video.muted = false;
-          console.log('🔊 TV 화면 클릭 → 소리 켜짐');
-          this._showSoundNotification('🔊 TV 소리가 켜졌습니다!', '#4caf50');
-        } else {
-          video.muted = true;
-          console.log('🔇 TV 화면 클릭 → 소리 꺼짐');
-          this._showSoundNotification('🔇 TV 소리가 꺼졌습니다!', '#f44336');
-        }
+      const intersects = raycaster.intersectObject(screenMesh);
+      if (intersects.length > 0 && !this.tvBroadcastStarted) {
+        console.log('🖱 TV clicked, revealing overlay.');
+        // Only assign the render target material if TV hasn't started yet
+        screenMesh.material = this.tvRenderTargetMaterial;
+        this.tvBroadcastStarted = true;
+        // Reset timer and tap count from click moment
+        this.startTime = performance.now();
+        this.keyPressCount = 0;
+        // initialize bar overlay when TV is clicked
+        this._setupTVbarOverlay();
+        // No overlay UI needed; progress/result handled by prRenderer
+        console.log('📺 TV 화면 → 개표 장면 전환 시작');
       }
+      // If TV already started, do NOT overwrite the material
     };
-    
     window.addEventListener('click', onTVClick);
-    this.tvClickHandler = onTVClick;
+
+    this.tvScreenMesh = screenMesh;
+
   }
+  // TV bar 화면 4개 꼭짓점 좌표로 정확한 바 화면 생성
+  _setupTVbarOverlay() {
+    console.log('📺 정확한 TV bar 좌표로 bar 생성...');
+
+    // TV 화면 4개 꼭짓점 좌표
+    const corners_bar = {
+      bottomLeft:  { x: 117.75, y: 85, z: 315.13 },
+      bottomRight: { x: 197.69, y: 85, z: 314.83 },
+      topLeft:     { x: 117.75, y: 100, z: 315.13 },
+      topRight:    { x: 197.69, y: 100, z: 314.83 }
+    };
+
+    // Geometry 생성
+    const geometry_bar = new THREE.BufferGeometry();
+    const vertices_bar = new Float32Array([
+      corners_bar.bottomLeft.x,  corners_bar.bottomLeft.y,  corners_bar.bottomLeft.z,
+      corners_bar.bottomRight.x, corners_bar.bottomRight.y, corners_bar.bottomRight.z,
+      corners_bar.topLeft.x,     corners_bar.topLeft.y,     corners_bar.topLeft.z,
+      corners_bar.bottomRight.x, corners_bar.bottomRight.y, corners_bar.bottomRight.z,
+      corners_bar.topRight.x,    corners_bar.topRight.y,    corners_bar.topRight.z,
+      corners_bar.topLeft.x,     corners_bar.topLeft.y,     corners_bar.topLeft.z
+    ]);
+    const uvs_bar = new Float32Array([
+      0, 0,  1, 0,  0, 1,
+      1, 0,  1, 1,  0, 1
+    ]);
+    geometry_bar.setAttribute('position', new THREE.BufferAttribute(vertices_bar, 3));
+    geometry_bar.setAttribute('uv',       new THREE.BufferAttribute(uvs_bar, 2));
+    geometry_bar.computeVertexNormals();
+
+    // 메시 생성 및 BarUtil 초기화
+    const barOverlayMesh = new THREE.Mesh(
+      geometry_bar,
+      new THREE.MeshBasicMaterial({ transparent: true })
+    );
+    this.barUtil.init(barOverlayMesh);
+
+    // 화면 위에 렌더링되도록 설정
+    barOverlayMesh.renderOrder = 1000;
+    barOverlayMesh.material.depthTest = false;
+
+    this.scene.add(barOverlayMesh);
+    this.barOverlayMesh = barOverlayMesh;
+  }
+  
+  // 🎵 TV 화면 클릭 감지 함수 (이전 비디오용, 렌더타겟 버전에서는 미사용)
 
   _optimizeLoadedAsset() {
     if (!this.bedroomModel) return;
@@ -412,10 +463,10 @@ export default class SceneHome {
       backdropFilter: 'blur(5px)'
     });
     this.textOverlay.innerHTML = `
-      🏠 집에서 TV 보다가 투표하러 가볼까?<br/>
+      🏠 이제 곧 개표가 시작된다. TV 앞으로 가볼까?<br/>
       <div style="font-size: 16px; margin-top: 15px; color: #ccc;">
-        📺️ TV 클릭해서 소리 켜기 <br/>
-        📱 핸드폰을 클릭해서 투표하기<br/>
+        📺️ TV 클릭해서 개표방송 보기 <br/>
+        <span style="color: #ffcc00;">⏳ Space 키로 당신의 후보를 당선시켜보자</span><br/>
         🎮 WASD로 이동 + 우클릭 드래그로 시점 변경
       </div>
     `;
@@ -425,7 +476,7 @@ export default class SceneHome {
 
   // onEnter에서 무거운 초기화 실행
   onEnter() {
-    console.log('SceneHome onEnter');
+    console.log('ResultBroadcastScene onEnter');
 
     // 한 번만 초기화
     if (!this.initialized) {
@@ -443,6 +494,17 @@ export default class SceneHome {
     this.cameraYaw = 0;
     this.cameraPitch = 0;
 
+    // reset tap-and-progress
+    this.keyPressCount = 0;
+    this.hasHandledResult = false;
+    window.addEventListener('keydown', this._handleKeyTap);
+
+    // Reset progress bars
+    if (this.tvScreenMesh) {
+      this.prRenderer.updateProgress(0, 0);
+      this.tvScreenMesh.material.map = this.prRenderer.renderToTexture();
+    }
+
     // 2) 조작 이벤트 등록, UI 추가 등
     this._setupControls();
     if (this.textOverlay) {
@@ -453,16 +515,13 @@ export default class SceneHome {
     const startScene = () => {
       if (this.assetsLoaded) {
         console.log('📷 방 내부 카메라 배치 완료 (자동 & 수동 적용)');
-        // 핸드폰 추가
-        this._addPhoneToDesk();
-
         // 수동 좌표로 재세팅
         this.camera.position.set(104.98, 50, 499.92);
         this.camera.lookAt(104.98, 50, 400);
         console.log('📷 startScene: 수동 카메라 위치 재세팅:', this.camera.position);
 
         // 텍스트 페이드인/out 등
-        setTimeout(() => this.textOverlay.style.opacity = '1', 800);
+        this.textOverlay.style.opacity = '1';
         setTimeout(() => this.textOverlay.style.opacity = '0', 5000);
       } else {
         setTimeout(startScene, 100);
@@ -473,16 +532,24 @@ export default class SceneHome {
 
   // 기존 구조에 맞춘 onExit 메서드
   onExit() {
-    console.log('SceneHome onExit');
-    
+    console.log('ResultBroadcastScene onExit');
+
+    window.removeEventListener('keydown', this._handleKeyTap);
     // UI 제거
     if (this.textOverlay && this.textOverlay.parentNode) {
       this.textOverlay.parentNode.removeChild(this.textOverlay);
     }
-    this._hideWarningUI();
-    
+    // Remove TV overlay mesh and canvas mesh (no longer used)
+    if (this.tvOverlayMesh) this.scene.remove(this.tvOverlayMesh);
+    if (this.canvasMesh) this.scene.remove(this.canvasMesh);
     // 이동 조작 이벤트 제거
     this._removeControls();
+    /*
+    const ui = document.getElementById('result-ui');
+    if (ui) {
+      ui.remove();
+    }
+    */
   }
 
   // 이벤트 리스너 함수들 미리 정의 (가벼운 작업)
@@ -559,12 +626,225 @@ export default class SceneHome {
       }
     };
     
-    // 클릭 이벤트 (핸드폰 상호작용)
-    this.onMouseClick = (event) => {
-      if (event.button === 0 && this.phoneModel) { // 좌클릭
-        this._checkPhoneClick(event);
+  }
+
+
+  // 이동 조작 설정
+  _setupControls() {
+    // 이벤트 등록
+    document.addEventListener('keydown', this.onKeyDown);
+    document.addEventListener('keyup', this.onKeyUp);
+    document.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('mouseup', this.onMouseUp);
+    document.addEventListener('mousemove', this.onMouseMove);
+    // 우클릭 메뉴 비활성화
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Space 키 이벤트 리스너 등록
+    document.addEventListener('keydown', this.onSpaceKeyDown);
+  }
+
+  _removeControls() {
+    // Space 키 이벤트 리스너 제거
+    document.removeEventListener('keydown', this.onSpaceKeyDown);
+    if (this.onKeyDown) {
+      document.removeEventListener('keydown', this.onKeyDown);
+      document.removeEventListener('keyup', this.onKeyUp);
+      document.removeEventListener('mousedown', this.onMouseDown);
+      document.removeEventListener('mouseup', this.onMouseUp);
+      document.removeEventListener('mousemove', this.onMouseMove);
+    }
+    document.body.style.cursor = 'default';
+  }
+
+  // 기존 update, render, 기타 메서드들은 모두 동일...
+  update() {
+    // 이동 처리
+    this._handleMovement();
+
+    // 에셋이 로드된 경우에만 업데이트
+    if (this.assetsLoaded && this.bedroomModel) {
+      const time = Date.now() * 0.001;
+
+      // 조명 미세 조정
+      this.scene.traverse((child) => {
+        if (child.type === 'PointLight') {
+          const baseIntensity = child.userData.baseIntensity || child.intensity;
+          child.userData.baseIntensity = baseIntensity;
+          child.intensity = baseIntensity + Math.sin(time * 1.5) * 0.05;
+        }
+      });
+
+      // TV 방송이 시작된 경우 내부 렌더타겟 씬을 렌더 및 애니메이션 업데이트
+      if (this.tvBroadcastStarted && this.internalScene && this.internalCamera && this.internalRenderTarget) {
+        const delta = this.clock.getDelta();
+
+        if (this.internalCandidate?.mixer) {
+          this.internalCandidate.mixer.update(delta);
+        }
+
+        this.renderer.setRenderTarget(this.internalRenderTarget);
+        this.renderer.render(this.internalScene, this.internalCamera);
+        this.renderer.setRenderTarget(null);
+
+        // update 3D world-space bars
+        const elapsed = performance.now() - this.startTime;
+        const timeRatio = Math.min(1, elapsed / this.timeLimit);
+        const tapRatio = Math.min(1, this.keyPressCount / this.requiredCount);
+        // Update bar overlay via BarUtil
+        this.barUtil.update(tapRatio, timeRatio);
+
+        // (optional) Remove or comment out prRenderer.updateProgress and renderToTexture calls:
+        // if (this.tvScreenMesh) {
+        //   this.prRenderer.updateProgress(tapRatio, timeRatio);
+        //   this.tvScreenMesh.material.map = this.prRenderer.renderToTexture();
+        // }
+
+        // handle result once
+        if (!this.hasHandledResult) {
+          if (tapRatio >= 1) {
+            this.hasHandledResult = true;
+            this.prRenderer.showResult(true);
+            if (this.tvScreenMesh) {
+              this.tvScreenMesh.material.map = this.prRenderer.renderToTexture();
+              this.tvScreenMesh.material.needsUpdate = true;
+            }
+            // 성공 시 2초 후 EndingScene으로 전환
+            setTimeout(() => {
+              this.sceneManager.transitionTo('ending');
+            }, 2000);
+          } else if (elapsed >= this.timeLimit) {
+            this.hasHandledResult = true;
+            this.prRenderer.showResult(false);
+            if (this.tvScreenMesh) {
+              this.tvScreenMesh.material.map = this.prRenderer.renderToTexture();
+              this.tvScreenMesh.material.needsUpdate = true;
+            }
+            // after failure result display, transition to ending after 2 seconds
+            setTimeout(() => {
+              this.sceneManager.transitionTo('ending');
+            }, 2000);
+          }
+        }
       }
-    };
+      // (phone glow 효과 제거)
+    }
+    // Update animation mixers for candidates
+    if (this.candidates && this.candidates.length > 0) {
+      const delta = this.clock.getDelta();
+      this.candidates.forEach(c => c.mixer && c.mixer.update(delta));
+    }
+  }
+
+  _handleMovement() {
+    const moveSpeed = 0.5;
+    
+    // 카메라의 현재 회전에 따른 방향 벡터 계산
+    const forward = new THREE.Vector3(
+      -Math.sin(this.cameraYaw),
+      0,
+      -Math.cos(this.cameraYaw)
+    ).normalize();
+    
+    const right = new THREE.Vector3(
+      Math.cos(this.cameraYaw),
+      0,
+      -Math.sin(this.cameraYaw)
+    ).normalize();
+    
+    // 이동 처리
+    const movement = new THREE.Vector3(0, 0, 0);
+    let moved = false;
+    
+    if (this.moveForward) {
+      movement.add(forward.clone().multiplyScalar(moveSpeed));
+      moved = true;
+    }
+    if (this.moveBackward) {
+      movement.add(forward.clone().multiplyScalar(-moveSpeed));
+      moved = true;
+    }
+    if (this.moveLeft) {
+      movement.add(right.clone().multiplyScalar(-moveSpeed));
+      moved = true;
+    }
+    if (this.moveRight) {
+      movement.add(right.clone().multiplyScalar(moveSpeed));
+      moved = true;
+    }
+    
+    // 카메라 위치 업데이트
+    if (moved) {
+      this.camera.position.add(movement);
+      
+      // 이동할 때마다 위치 출력 (디버깅용)
+      if (Date.now() % 500 < 16) {
+        console.log('🚶 현재 위치:', {
+          x: Math.round(this.camera.position.x * 100) / 100,
+          y: Math.round(this.camera.position.y * 100) / 100,
+          z: Math.round(this.camera.position.z * 100) / 100
+        });
+      }
+    }
+  }
+
+  // 카메라 회전 업데이트
+  _updateCameraRotation() {
+    // yaw와 pitch를 사용해서 카메라가 바라볼 방향 계산
+    const lookDirection = new THREE.Vector3(
+      -Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch),
+      Math.sin(this.cameraPitch),
+      -Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch)
+    );
+    
+    // 카메라가 바라볼 타겟 위치 계산
+    const target = this.camera.position.clone().add(lookDirection);
+    
+    // lookAt으로 카메라 방향 설정
+    this.camera.lookAt(target);
+  }
+
+
+  // 렌더링
+  render() {
+    // 배경색 설정 등
+    this.renderer.setClearColor(this.assetsLoaded ? 0xf8f8f8 : 0x1a1a1a);
+    
+    // CSS2DRenderer 처리
+    if (this.labelRenderer) {
+      // Warning UI 상태 확인
+      const hasWarningUI = this.warningUI && 
+                          this.warningUI.element && 
+                          this.warningUI.element.style.display !== 'none';
+      
+      if (hasWarningUI) {
+        this.labelRenderer.domElement.style.pointerEvents = 'auto';
+      } else {
+        this.labelRenderer.domElement.style.pointerEvents = 'none';
+      }
+      
+      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      this.labelRenderer.render(this.scene, this.camera);
+    }
+  }
+
+  // 메모리 정리
+  dispose() {
+    // CSS2DRenderer 정리
+    if (this.labelRenderer && this.labelRenderer.domElement.parentNode) {
+      this.labelRenderer.domElement.parentNode.removeChild(this.labelRenderer.domElement);
+    }
+    
+    // UI 요소들 정리
+    if (this.textOverlay && this.textOverlay.parentNode) {
+      this.textOverlay.parentNode.removeChild(this.textOverlay);
+    }
+    
+    // Three.js 객체들 정리
+    if (this.scene) {
+      this.scene.clear();
+    }
+    
+    console.log('ResultBroadcastScene disposed');
   }
 
   // 3D 위에 HTML 패널 띄우기
@@ -1090,253 +1370,4 @@ export default class SceneHome {
     container.appendChild(back);
   }
 }
-
-  _showVoteDayChoice(container) {
-    container.innerHTML = `
-      <h2>🗓️ 언제 투표하시나요?</h2>
-      <button id="early" style="width:100%;padding:10px;margin:8px 0;background:#28a745;color:#fff;border:none;border-radius:6px;cursor:pointer;">사전투표일</button>
-      <button id="main" style="width:100%;padding:10px;margin:8px 0;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;">본 투표일</button>
-      <button id="back-vote" style="margin-top:12px;padding:8px;background:#aaa;color:#fff;border:none;border-radius:4px;cursor:pointer;">뒤로</button>
-    `;
-    
-    container.querySelector('#early').onclick = () => this.sceneManager.transitionTo('earlyVote');
-    container.querySelector('#main').onclick = () => this.sceneManager.transitionTo('mainVote');
-    // -----------------------------------------------------------------------사전투표일/본 투표일 버튼 클릭 이벤트 -------------------------------------------------------------------
-    container.querySelector('#back-vote').onclick = () => {
-      this.phoneModel.remove(this.phoneUI);
-      this.phoneUI = null;
-      this._showPhoneUI();
-    };
-  }
-
-  // 이동 조작 설정
-  _setupControls() {
-    // 이벤트 등록
-    document.addEventListener('keydown', this.onKeyDown);
-    document.addEventListener('keyup', this.onKeyUp);
-    document.addEventListener('mousedown', this.onMouseDown);
-    document.addEventListener('mouseup', this.onMouseUp);
-    document.addEventListener('mousemove', this.onMouseMove);
-    document.addEventListener('click', this.onMouseClick);
-    
-    // 우클릭 메뉴 비활성화
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-  }
-
-  _removeControls() {
-    if (this.onKeyDown) {
-      document.removeEventListener('keydown', this.onKeyDown);
-      document.removeEventListener('keyup', this.onKeyUp);
-      document.removeEventListener('mousedown', this.onMouseDown);
-      document.removeEventListener('mouseup', this.onMouseUp);
-      document.removeEventListener('mousemove', this.onMouseMove);
-      document.removeEventListener('click', this.onMouseClick);
-    }
-    document.body.style.cursor = 'default';
-  }
-
-  // 기존 update, render, 기타 메서드들은 모두 동일...
-  update() {
-    // 이동 처리
-    this._handleMovement();
-    
-    // 에셋이 로드된 경우에만 업데이트
-    if (this.assetsLoaded && this.bedroomModel) {
-      const time = Date.now() * 0.001;
-      
-      // 조명 미세 조정
-      this.scene.traverse((child) => {
-        if (child.type === 'PointLight') {
-          const baseIntensity = child.userData.baseIntensity || child.intensity;
-          child.userData.baseIntensity = baseIntensity;
-          child.intensity = baseIntensity + Math.sin(time * 1.5) * 0.05;
-        }
-      });
-      
-      // 핸드폰 glow 효과 (깜빡임)
-      if (this.phoneGlow) {
-        this.phoneGlow.material.opacity = 0.1 + Math.sin(time * 3) * 0.1;
-      }
-    }
-  }
-
-  _handleMovement() {
-    const moveSpeed = 0.5;
-    
-    // 카메라의 현재 회전에 따른 방향 벡터 계산
-    const forward = new THREE.Vector3(
-      -Math.sin(this.cameraYaw),
-      0,
-      -Math.cos(this.cameraYaw)
-    ).normalize();
-    
-    const right = new THREE.Vector3(
-      Math.cos(this.cameraYaw),
-      0,
-      -Math.sin(this.cameraYaw)
-    ).normalize();
-    
-    // 이동 처리
-    const movement = new THREE.Vector3(0, 0, 0);
-    let moved = false;
-    
-    if (this.moveForward) {
-      movement.add(forward.clone().multiplyScalar(moveSpeed));
-      moved = true;
-    }
-    if (this.moveBackward) {
-      movement.add(forward.clone().multiplyScalar(-moveSpeed));
-      moved = true;
-    }
-    if (this.moveLeft) {
-      movement.add(right.clone().multiplyScalar(-moveSpeed));
-      moved = true;
-    }
-    if (this.moveRight) {
-      movement.add(right.clone().multiplyScalar(moveSpeed));
-      moved = true;
-    }
-    
-    // 카메라 위치 업데이트
-    if (moved) {
-      this.camera.position.add(movement);
-      
-      // 이동할 때마다 위치 출력 (디버깅용)
-      if (Date.now() % 500 < 16) {
-        console.log('🚶 현재 위치:', {
-          x: Math.round(this.camera.position.x * 100) / 100,
-          y: Math.round(this.camera.position.y * 100) / 100,
-          z: Math.round(this.camera.position.z * 100) / 100
-        });
-      }
-    }
-  }
-
-  // 카메라 회전 업데이트
-  _updateCameraRotation() {
-    // yaw와 pitch를 사용해서 카메라가 바라볼 방향 계산
-    const lookDirection = new THREE.Vector3(
-      -Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch),
-      Math.sin(this.cameraPitch),
-      -Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch)
-    );
-    
-    // 카메라가 바라볼 타겟 위치 계산
-    const target = this.camera.position.clone().add(lookDirection);
-    
-    // lookAt으로 카메라 방향 설정
-    this.camera.lookAt(target);
-  }
-
-  // 책상 위에 핸드폰 추가 
-  _addPhoneToDesk() {
-    // 폰 모델 생성 (박스 형태)
-    const phoneGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.01);
-    const phoneMaterial = new THREE.MeshPhongMaterial({
-      color: 0x2c2c2c,
-      shininess: 100
-    });
-    this.phoneModel = new THREE.Mesh(phoneGeometry, phoneMaterial);
-
-    // 1) 스케일 조정 (30배)
-    const scaleFactor = 30;
-    this.phoneModel.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-    // 2) 폰을 가로로 눕히기 (X축 90도 회전)
-    this.phoneModel.rotation.x = -Math.PI / 2;
-
-    // 3) 수동 위치 설정
-    const manualPhonePos = new THREE.Vector3(146.46, 25, 382.79);
-    this.phoneModel.position.copy(manualPhonePos);
-    console.log('📱 수동 핸드폰 위치 및 방향 설정:', manualPhonePos, this.phoneModel.rotation);
-
-    // 4) 그림자 및 클릭 이벤트 설정
-    this.phoneModel.castShadow = true;
-    this.phoneModel.userData = { clickable: true, action: 'phoneCheck' };
-    this.scene.add(this.phoneModel);
-
-    // 5) 글로우 효과 생성 (크기 확대)
-    const glowRadius = 0.5;
-    const glowGeometry = new THREE.SphereGeometry(glowRadius, 8, 8);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0x00ff88,
-      transparent: true,
-      opacity: 0.2
-    });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-    // 폰 스케일에 맞춰 글로우도 스케일링
-    glow.scale.set(scaleFactor, scaleFactor, scaleFactor);
-    glow.position.copy(manualPhonePos);
-    this.scene.add(glow);
-    this.phoneGlow = glow;
-  }
-
-  // 핸드폰 클릭 체크
-  _checkPhoneClick(event) {
-    if (!this.phoneModel) return;
-    
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2(
-      (event.clientX / window.innerWidth) * 2 - 1,
-      -(event.clientY / window.innerHeight) * 2 + 1
-    );
-    raycaster.setFromCamera(mouse, this.camera);
-    const intersects = raycaster.intersectObject(this.phoneModel);
-    
-    if (intersects.length > 0) {
-      console.log('📱 핸드폰 클릭됨!');
-      
-      // 클릭 시 Emissive 효과 
-      this.phoneModel.material.emissive.setHex(0x444444);
-      setTimeout(() => {
-        this.phoneModel.material.emissive.setHex(0x000000);
-      }, 200);
-      
-      // 화면 전환 대신 UI 띄우기
-      this._showPhoneUI();
-    }
-  }
-
-  // 렌더링
-  render() {
-    // 배경색 설정 등
-    this.renderer.setClearColor(this.assetsLoaded ? 0xf8f8f8 : 0x1a1a1a);
-    
-    // CSS2DRenderer 처리
-    if (this.labelRenderer) {
-      // Warning UI 상태 확인
-      const hasWarningUI = this.warningUI && 
-                          this.warningUI.element && 
-                          this.warningUI.element.style.display !== 'none';
-      
-      if (hasWarningUI) {
-        this.labelRenderer.domElement.style.pointerEvents = 'auto';
-      } else {
-        this.labelRenderer.domElement.style.pointerEvents = 'none';
-      }
-      
-      this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-      this.labelRenderer.render(this.scene, this.camera);
-    }
-  }
-
-  // 메모리 정리
-  dispose() {
-    // CSS2DRenderer 정리
-    if (this.labelRenderer && this.labelRenderer.domElement.parentNode) {
-      this.labelRenderer.domElement.parentNode.removeChild(this.labelRenderer.domElement);
-    }
-    
-    // UI 요소들 정리
-    if (this.textOverlay && this.textOverlay.parentNode) {
-      this.textOverlay.parentNode.removeChild(this.textOverlay);
-    }
-    
-    // Three.js 객체들 정리
-    if (this.scene) {
-      this.scene.clear();
-    }
-    
-    console.log('SceneHome disposed');
-  }
 }

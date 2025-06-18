@@ -1,19 +1,35 @@
-// Ensure THREE is available globally if needed
-if (typeof window !== 'undefined' && !window.THREE) {
-  window.THREE = await import('three');
-}
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 export default class Candidate {
-  constructor(model, animationClips) {
+  constructor(model, animationClips = []) {
     this.model = model;
-    this.model.position.set(0, 0, 0); // default position, can be updated externally
-    this.animationClips = animationClips; // Array of THREE.AnimationClip
+    this.model.position.set(0, 0, 0); // default position
+    this.animationClips = animationClips;
     this.mixer = new THREE.AnimationMixer(model);
     this.currentAction = null;
     this.currentClipIndex = 0;
-    if (typeof window !== 'undefined' && window.scene) {
-      window.scene.add(this.model);
-    }
+  }
+
+  static async loadFromGLB(path) {
+    const loader = new GLTFLoader();
+    return new Promise((resolve, reject) => {
+      loader.load(
+        path,
+        (gltf) => {
+          const model = gltf.scene;
+          const clips = gltf.animations || [];
+          const candidate = new Candidate(model, clips);
+          resolve(candidate);
+        },
+        undefined,
+        (error) => reject(error)
+      );
+    });
+  }
+
+  addToScene(scene) {
+    scene.add(this.model);
   }
 
   setPosition(position) {

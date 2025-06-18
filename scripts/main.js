@@ -12,8 +12,8 @@ import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
 import EndingScene from './scenes/EndingScene.js';
 import ResultBroadcastScene from './scenes/ResultBroadcastScene.js';
-import ResultVictoryScene from './scenes/ResultVictoryScene.js';
-import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
+// import ResultVictoryScene from './scenes/ResultVictoryScene.js';
+// import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
 // import SceneEarlyVote from './scenes/SceneEarlyVote.js';
 // import SceneMainVote from './scenes/SceneMainVote.js';
 
@@ -66,14 +66,12 @@ window.addEventListener('DOMContentLoaded', () => {
   sceneManager.addScene('returnHome', () => new SceneReturnHome(renderer, camera, sceneManager));
   sceneManager.addScene('ending', () => new EndingScene(renderer, camera, sceneManager));
   sceneManager.addScene('resultBroadcast', () => new ResultBroadcastScene(renderer, camera, sceneManager));
-  sceneManager.addScene('resultVictory', () => new ResultVictoryScene(renderer, camera, sceneManager));
-  sceneManager.addScene('resultFiveYearsLater', () => new ResultFiveYearsLaterScene(renderer, camera, sceneManager));
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();
 
   // 6) 최초 씬 설정
-  sceneManager.transitionTo('home');
+  sceneManager.transitionTo('resultBroadcast');
 
   // 7) 창 크기 변화 처리
   window.addEventListener('resize', () => {
