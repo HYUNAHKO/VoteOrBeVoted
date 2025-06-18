@@ -107,7 +107,7 @@ export default class SceneReturnHome {
         // Floating 메시지 - CSS 클래스 사용
         this.floatingMessage = document.createElement('div');
         this.floatingMessage.className = 'floating-message';
-        this.floatingMessage.textContent = '길 건너에 선거 벽보가 있는 것 같다! 구경하러 가보자.';
+        this.floatingMessage.textContent = '↱ 길 건너에 선거 벽보가 있는 것 같다! 구경하러 가보자. ↱';
         this.floatingMessage.style.display = 'none'; // 초기에는 숨김
         document.body.appendChild(this.floatingMessage);
         
