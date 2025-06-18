@@ -634,21 +634,21 @@ export default class SceneHome {
 
       // 후보 목록 추가
       const candidates = [
-        { key:'A', name:'김후보', policies:[
+        { key:'A', name:'Phong', policies:[
             '교육비 전면 무상화 추진',
             '청년 일자리 50만개 창출 계획 발표',
             '탈원전·신재생에너지 확대',
             '부동산 투기 근절법안 발의'
           ]
         },
-        { key:'B', name:'이후보', policies:[
-            '국민 건강보험 보장성 강화',
-            'K-교통 인프라 4차 확충',
-            '중소기업 혁신 펀드 1조원 조성',
-            '디지털 규제 샌드박스 운영'
+        { key:'B', name:'이인권', policies:[
+            'AI 기반 그래픽스 인재 10만 양성 프로젝트',
+            '공공 XR 메타버스 서비스 구축 지원',
+            '디지털 트윈 기반 스마트 시티 시범사업 확대',
+            '컴퓨터그래픽스 산업 고도화를 위한 R&D 투자 확대'
           ]
         },
-        { key:'C', name:'박후보', policies:[
+        { key:'C', name:'Catmull', policies:[
             '기초연금 30% 인상',
             '문화예술진흥 특별법 제정',
             '공공와이파이 전국 확충',
@@ -894,6 +894,60 @@ export default class SceneHome {
     console.log('⚖️ 비방 처벌 안내 UI 표시');
   }
 
+  _showCustomAlert(message, buttonText = '확인', callback = null) {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '30%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 255, 255, 0.95)',
+            color: '#333',
+            padding: '20px 30px',
+            borderRadius: '12px',
+            zIndex: '2500',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            fontSize: '18px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            minWidth: '300px'
+        });
+        container.className = 'custom-alert';
+        container.innerHTML = `
+            <p style="margin-bottom: 20px; line-height: 1.5;">
+                ${message}
+            </p>
+            <button style="
+                padding: 12px 24px;
+                font-size: 18px;
+                background: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+            ">${buttonText}</button>
+        `;
+        
+        document.body.appendChild(container);
+        
+        const button = container.querySelector('button');
+        button.onclick = () => {
+            document.body.removeChild(container);
+            if (callback) callback();
+        };
+        
+        // 호버 효과
+        button.onmouseover = () => {
+            button.style.background = '#2980b9';
+            button.style.transform = 'scale(1.05)';
+        };
+        button.onmouseout = () => {
+            button.style.background = '#3498db';
+            button.style.transform = 'scale(1)';
+        };
+    }
+
   _hideWarningUI() {
     if (this.warningUI) {
       this.warningUI.element.style.display = 'none';
@@ -967,7 +1021,7 @@ export default class SceneHome {
       console.log('📝 댓글 제출:', text); // 디버깅용
       
       if (!text) {
-        alert('댓글을 입력해주세요.');
+        this._showCustomAlert('댓글을 입력해주세요.');
         return;
       }
       
@@ -977,7 +1031,7 @@ export default class SceneHome {
       
       if (hasBadWord) {
         // 🔧 처벌 메시지와 함께 리스폰 위치 설정
-        alert('비방성 댓글은 처벌받을 수 있습니다. 메인 화면으로 돌아갑니다.');
+        this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다. 메인 화면으로 돌아갑니다.');
           
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
         const respawnPosition = new THREE.Vector3(104.98, 50, 499.92);
@@ -1048,7 +1102,7 @@ export default class SceneHome {
       
     } catch (error) {
       console.error('❌ 댓글 제출 중 오류:', error);
-      alert('댓글 등록 중 오류가 발생했습니다.');
+      this._showCustomAlert('댓글 등록 중 오류가 발생했습니다.');
     }
   };
 
