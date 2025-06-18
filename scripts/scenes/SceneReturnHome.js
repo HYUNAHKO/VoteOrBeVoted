@@ -139,6 +139,52 @@ export default class SceneReturnHome {
             </div>
         `;
         document.body.appendChild(this.phoneUI);
+        
+        // 방향 안내 UI 생성 (우측 상단)
+        this.directionGuide = document.createElement('div');
+        this.directionGuide.className = 'direction-guide';
+        this.directionGuide.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 150, 255, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-family: 'Malgun Gothic', Arial, sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            max-width: 280px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        `;
+        this.directionGuide.innerHTML = `
+            <div style="margin-bottom: 8px;">🚶‍♂️ 길 안내 🚶‍♀️</div>
+            <div style="font-size: 14px; line-height: 1.4;">
+                앞으로 길을 건너서<br>
+                오른쪽으로 한번 더<br>
+                길을 건너보세요!
+            </div>
+        `;
+        this.directionGuide.style.display = 'none'; // 초기에는 숨김
+        document.body.appendChild(this.directionGuide);
+        
+        // CSS 애니메이션 추가
+        if (!document.querySelector('#direction-guide-style')) {
+            const style = document.createElement('style');
+            style.id = 'direction-guide-style';
+            style.textContent = `
+                @keyframes pulse {
+                    0% { transform: scale(1); opacity: 0.9; }
+                    50% { transform: scale(1.05); opacity: 1; }
+                    100% { transform: scale(1); opacity: 0.9; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     _loadOutdoorModel() {
@@ -404,6 +450,7 @@ export default class SceneReturnHome {
         // UI 초기 상태 설정
         this._hideAllUI();
         this._showFloatingMessage();
+        this._showDirectionGuide(); // 방향 안내 UI 즉시 표시
         
         // 10초 후 휴대폰 UI 표시
         setTimeout(() => {
@@ -439,6 +486,7 @@ export default class SceneReturnHome {
         if (this.modal) this.modal.style.display = 'none';
         if (this.floatingMessage) this.floatingMessage.style.display = 'none';
         if (this.phoneUI) this.phoneUI.style.display = 'none';
+        if (this.directionGuide) this.directionGuide.style.display = 'none';
     }
 
     _clearHighlight() {
@@ -484,6 +532,19 @@ export default class SceneReturnHome {
         }
     }
 
+    _showDirectionGuide() {
+        if (this.directionGuide) {
+            this.directionGuide.style.display = 'block';
+            
+            // 15초 후 자동으로 숨김
+            setTimeout(() => {
+                if (this.directionGuide) {
+                    this.directionGuide.style.display = 'none';
+                }
+            }, 15000);
+        }
+    }
+
     // 매 프레임마다 호출
     update() {
         this._updateMovement();
@@ -514,6 +575,12 @@ export default class SceneReturnHome {
         }
         if (this.floatingMessage && this.floatingMessage.parentNode) {
             this.floatingMessage.parentNode.removeChild(this.floatingMessage);
+        }
+        if (this.phoneUI && this.phoneUI.parentNode) {
+            this.phoneUI.parentNode.removeChild(this.phoneUI);
+        }
+        if (this.directionGuide && this.directionGuide.parentNode) {
+            this.directionGuide.parentNode.removeChild(this.directionGuide);
         }
         
         // Three.js 객체들 정리
