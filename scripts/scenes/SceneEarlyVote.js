@@ -764,7 +764,7 @@ export default class SceneEarlyVote {
 
         console.log('🗳️ 투표 용지를 받았습니다!');
         this._showCustomAlert('🗳️ 투표 용지를 받았습니다!<br>기표소로 가서 투표하세요.');
-        this.ballotReceived = true;  // ◀️ 여기를 추가
+        this.ballotReceived = true;  
     }
 
     _showVoteConfirmUI() {
@@ -789,6 +789,7 @@ export default class SceneEarlyVote {
         };
         container.querySelector('#vote-no').onclick = () => {
             document.body.removeChild(container);
+            this.voteConfirmShown = false;
         };
     }
 
@@ -1053,7 +1054,9 @@ export default class SceneEarlyVote {
         // 씬 강제 종료 (홈 씬으로 전환)
         setTimeout(() => {
             console.log('📸 촬영 시도로 인한 씬 종료');
-            this.sceneManager.transitionTo('home'); // 또는 원하는 다른 씬으로
+            this.ballotReceived = false;  
+            this.voteConfirmShown = false;
+            this.sceneManager.transitionTo('home');
         }, 2000);
     }
 
