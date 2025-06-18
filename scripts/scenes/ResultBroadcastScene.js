@@ -273,9 +273,9 @@ export default class SceneHome {
       // --- 후보자 이름 라벨 Sprite 추가 ---
       // 이름/오프셋 배열
       const nameLabels = [
-        { text: '김후보', offsetX: -1 },
-        { text: '이후보', offsetX: 0 },
-        { text: '박후보', offsetX: 1 }
+        { text: 'Phong', offsetX: -1 },
+        { text: '이인권', offsetX: 0 },
+        { text: 'Catmull', offsetX: 1 }
       ];
       const headY = 0.5; // 머리 위 쯤의 높이
       nameLabels.forEach(({ text, offsetX }) => {
