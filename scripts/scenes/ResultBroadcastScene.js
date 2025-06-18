@@ -25,6 +25,9 @@ export default class SceneHome {
     this.labelRenderer = null;
     this.textOverlay = null;
     this.bedroomModel = null;
+    // Glow 효과 객체들
+    this.phoneGlow = null;
+    this.tvGlow = null;
     // 가벼운 상태 변수들만 초기화
     this.manualStartPosition = null;
     this.shouldRespawn = false;
@@ -51,7 +54,7 @@ export default class SceneHome {
     // tap-and-progress logic
     this.keyPressCount = 0;
     this.timeLimit = 5000; // milliseconds
-    this.requiredCount = 30;
+    this.requiredCount = 10;
     this.hasHandledResult = false;
     this._handleKeyTap = (e) => {
       if (e.code === 'Space') {
@@ -208,6 +211,27 @@ export default class SceneHome {
     const blackMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
     const screenMesh = new THREE.Mesh(geometry, blackMaterial); // Ensure black material assigned initially
     this.scene.add(screenMesh);
+    // TV 글로우 효과 생성
+    const tvGlowRadius = 5;
+    const tvGlowGeom = new THREE.SphereGeometry(tvGlowRadius, 16, 16);
+    const tvGlowMat = new THREE.MeshBasicMaterial({
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.2
+    });
+    this.tvGlow = new THREE.Mesh(tvGlowGeom, tvGlowMat);
+    // Store base scale for pulsing
+    this.tvGlow.userData.baseScale = tvGlowRadius;
+    // compute center of TV screen plane and position glow there
+    const tvCenter = new THREE.Vector3();
+    geometry.computeBoundingBox();
+    geometry.boundingBox.getCenter(tvCenter);
+    this.tvGlow.position.copy(tvCenter);
+    // ensure glow renders on top
+    this.tvGlow.renderOrder = 1001;
+    this.tvGlow.material.depthTest = false;
+    this.scene.add(this.tvGlow);
+    console.log('🐉 TV Glow created with renderOrder:', this.tvGlow.renderOrder, 'depthTest:', this.tvGlow.material.depthTest, 'position:', this.tvGlow.position);
 
     // Create an overlay mesh matching the TV screen plane
     const overlayGeom = geometry.clone();
@@ -245,6 +269,43 @@ export default class SceneHome {
       candidateModel.setPosition(new THREE.Vector3(0, -1, 0));
       candidateModel.model.scale.set(0.6, 0.75, 0.6); // Increase Y (height) scale to 0.75
       candidateModel.addToScene(rtScene);
+
+      // --- 후보자 이름 라벨 Sprite 추가 ---
+      // 이름/오프셋 배열
+      const nameLabels = [
+        { text: '김후보', offsetX: -1 },
+        { text: '이후보', offsetX: 0 },
+        { text: '박후보', offsetX: 1 }
+      ];
+      const headY = 0.5; // 머리 위 쯤의 높이
+      nameLabels.forEach(({ text, offsetX }) => {
+        // 캔버스 생성
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        // 배경 투명, 텍스트 흰색+검정 테두리
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'bold 40px Malgun Gothic, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // 테두리(검정)
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#222';
+        ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+        // 본문(흰색)
+        ctx.fillStyle = '#fff';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        // Texture/Sprite 생성
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(material);
+        sprite.position.set(offsetX, headY, 0);
+        sprite.scale.set(1.5, 0.4, 1);
+        rtScene.add(sprite);
+      });
+
       this.internalCandidate = candidateModel;
     }).catch(err => {
       console.error('❌ 후보자 모델 로딩 실패:', err);
@@ -274,6 +335,14 @@ export default class SceneHome {
       raycaster.setFromCamera(mouse, this.camera);
       const intersects = raycaster.intersectObject(screenMesh);
       if (intersects.length > 0 && !this.tvBroadcastStarted) {
+        // Require user to be within interaction distance to click the TV
+        const hitPoint = intersects[0].point;
+        const distanceToTV = this.camera.position.distanceTo(hitPoint);
+        const maxDistance = 100; // maximum allowed distance to interact
+        if (distanceToTV > maxDistance) {
+          console.log(`📏 TV too far: ${distanceToTV.toFixed(2)} > ${maxDistance}`);
+          return;
+        }
         console.log('🖱 TV clicked, revealing overlay.');
         // Only assign the render target material if TV hasn't started yet
         screenMesh.material = this.tvRenderTargetMaterial;
@@ -283,6 +352,11 @@ export default class SceneHome {
         this.keyPressCount = 0;
         // initialize bar overlay when TV is clicked
         this._setupTVbarOverlay();
+        // TV 클릭 시 글로우 제거
+        if (this.tvGlow) {
+          this.scene.remove(this.tvGlow);
+          this.tvGlow = null;
+        }
         // No overlay UI needed; progress/result handled by prRenderer
         console.log('📺 TV 화면 → 개표 장면 전환 시작');
       }
@@ -806,6 +880,15 @@ export default class SceneHome {
 
   // 렌더링
   render() {
+    // Pulse TV glow if present
+    if (this.tvGlow) {
+      const t = Date.now() * 0.005;
+      const base = this.tvGlow.userData.baseScale || 10;
+      const scale = base * (1 + Math.sin(t) * 0.3);
+      this.tvGlow.scale.setScalar(scale);
+      this.tvGlow.material.opacity = 0.2 + Math.sin(t * 2) * 0.1;
+    }
+    console.log('🌓 render() called, tvGlow exists:', !!this.tvGlow);
     // 배경색 설정 등
     this.renderer.setClearColor(this.assetsLoaded ? 0xf8f8f8 : 0x1a1a1a);
     
@@ -1370,4 +1453,4 @@ export default class SceneHome {
     container.appendChild(back);
   }
 }
-}
+  }
