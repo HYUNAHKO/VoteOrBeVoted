@@ -82,6 +82,12 @@ export default class SceneMainVote {
             new THREE.Vector3(12.72, 15, 8.7)
         ];
 
+        // 투표용지 촬영 관련 속성 추가
+        this.photoUIShown = false;          // 사진 촬영 UI 표시 여부
+        this.phone = null;              // 핸드폰 든 손 3D 오브젝트
+        this.photoTimer = null;             // 사진 촬영 유도 타이머
+        this.voteConfirmShown = false;      // 투표 확인창 표시 여부 
+
         this.selectedCandidate = null;        
         this._initScene();
         this._createUI();
@@ -115,7 +121,62 @@ export default class SceneMainVote {
         
         // 배경색 설정
         this.scene.background = new THREE.Color(0xC0C0C0); // 연한 회색 
+
+        // 핸드폰 든 손 생성 및 씬에 추가
+        this.phone = this._createPhone();
+        this.scene.add(this.phone);
+
     }
+
+    // 핸드폰 3D 오브젝트 생성 
+    _createPhone() {
+        const phoneGroup = new THREE.Group();
+        phoneGroup.name = 'PhoneGroup';
+        
+        // 핸드폰 본체 (세로로 세워진 형태)
+        const phoneGeometry = new THREE.BoxGeometry(1.2, 2, 0.12); 
+        const phoneMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x1a1a1a,
+            emissive: 0x111111,
+            emissiveIntensity: 0.2
+        });
+        const phone = new THREE.Mesh(phoneGeometry, phoneMaterial);
+        phone.name = 'PhoneBody';
+        phoneGroup.add(phone);
+        
+        // 화면
+        const screenGeometry = new THREE.BoxGeometry(1.04, 1.76, 0.01);
+        const screenMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xADD8E6,
+            emissive: 0x4444FF,
+            emissiveIntensity: 0.4
+        });
+        const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+        screen.name = 'Screen';
+        screen.position.set(0, 0, 0.065); // 핸드폰 앞면에 위치
+        phoneGroup.add(screen);
+        
+        // 카메라 렌즈
+        const lensGeometry = new THREE.CircleGeometry(0.06, 16);
+        const lensMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        const lens = new THREE.Mesh(lensGeometry, lensMaterial);
+        lens.position.set(0.28, 0.72, -0.065); // 뒷면 상단
+        lens.rotation.x = Math.PI;
+        phoneGroup.add(lens);
+        
+        // 홈 버튼
+        const buttonGeometry = new THREE.CircleGeometry(0.08, 16);
+        const buttonMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+        const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+        button.position.set(0, -0.8, 0.065); // 앞면 하단
+        phoneGroup.add(button);
+        
+        // 초기 위치 및 회전 설정
+        phoneGroup.position.set(0, -10, 0); // 화면 아래 숨김
+        phoneGroup.visible = false;
+        
+        return phoneGroup;
+    }   
 
     // 집 가는 부분 Glow 생성
     _createReturnHomeGlow() {
@@ -521,7 +582,7 @@ export default class SceneMainVote {
             // 투표함 클릭 -> _submitVote 호출
             else if (type === 'box') {
                 if (!this.selectedCandidate) {
-                    alert('먼저 기표소에서 후보를 선택하세요.');
+                    this._showCustomAlert('먼저 기표소에서 후보를 선택하세요.');
                 } else {
                     this._submitVote();
                 }
@@ -532,7 +593,7 @@ export default class SceneMainVote {
     _submitVote() {
         if (this.ballotSubmitted) return;
         console.log(`✅ 최종 투표: ${this.selectedCandidate}`);
-        alert(`투표함에 ${this.selectedCandidate} 로 투표되었습니다!`);
+        this._showCustomAlert(`투표함에 ${this.selectedCandidate} 후보로 투표되었습니다!`);
         this.ballotSubmitted = true;
     }
     
@@ -751,7 +812,7 @@ export default class SceneMainVote {
         if (this.ballotReceived) return;
 
         console.log('🗳️ 투표 용지를 받았습니다!');
-        alert('🗳️ 투표 용지를 받았습니다! 투표하세요.');
+        this._showCustomAlert('🗳️ 투표 용지를 받았습니다! 투표하세요.');
         this.ballotReceived = true;  // ◀️ 여기를 추가
     }
 
@@ -802,16 +863,16 @@ export default class SceneMainVote {
             <h2 style="margin-bottom:20px; font-size:24px;">🗳️ 투표 용지</h2>
             <div style="margin-bottom:20px; text-align:left;">
             <label style="display:block; margin-bottom:10px; font-size:18px;">
-                <input type="radio" name="cand" value="김후보" style="transform:scale(1.2); margin-right:8px;">
-                김후보
+                <input type="radio" name="cand" value="Phong" style="transform:scale(1.2); margin-right:8px;">
+                Phong
             </label>
             <label style="display:block; margin-bottom:10px; font-size:18px;">
-                <input type="radio" name="cand" value="이후보" style="transform:scale(1.2); margin-right:8px;">
-                이후보
+                <input type="radio" name="cand" value="이인권" style="transform:scale(1.2); margin-right:8px;">
+                이인권
             </label>
             <label style="display:block; margin-bottom:20px; font-size:18px;">
-                <input type="radio" name="cand" value="박후보" style="transform:scale(1.2); margin-right:8px;">
-                박후보
+                <input type="radio" name="cand" value="Catmull" style="transform:scale(1.2); margin-right:8px;">
+                Catmull
             </label>
             </div>
             <button id="ballot-submit" style="
@@ -828,16 +889,241 @@ export default class SceneMainVote {
         `;
         document.body.appendChild(container);
 
+        // 투표 용지 UI가 표시된 3초 후 사진 촬영 유도
+        this.photoTimer = setTimeout(() => {
+            if (document.getElementById('vote-ballot') && !this.photoUIShown) {
+                this._showPhotoPromptUI();
+            }
+        }, 1000);
+
+
         container.querySelector('#ballot-submit').onclick = () => {
         const sel = container.querySelector('input[name="cand"]:checked');
         if (!sel) {
-            alert('후보를 선택해주세요.');
+            this._showCustomAlert('후보를 선택해주세요.');
             return;
         }
-        this.selectedCandidate = sel.value;      
-        alert(`투표 용지에 ${sel.value} 선택 완료!\n투표함으로 이동하세요.`);
+        this.selectedCandidate = sel.value;
+        this._showCustomAlert(`투표 용지에 ${sel.value} 선택 완료!\n투표함으로 이동하세요.`);
+
+        // 투표 용지 제출 시 사진 촬영 관련 UI 
+        this._clearPhotoUI();
+
         document.body.removeChild(container);
         };
+    }
+
+    _showCustomAlert(message, buttonText = '확인', callback = null) {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '30%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 255, 255, 0.95)',
+            color: '#333',
+            padding: '20px 30px',
+            borderRadius: '12px',
+            zIndex: '2500',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            fontSize: '18px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            minWidth: '300px'
+        });
+        container.className = 'custom-alert';
+        container.innerHTML = `
+            <p style="margin-bottom: 20px; line-height: 1.5;">
+                ${message}
+            </p>
+            <button style="
+                padding: 12px 24px;
+                font-size: 18px;
+                background: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+            ">${buttonText}</button>
+        `;
+        
+        document.body.appendChild(container);
+        
+        const button = container.querySelector('button');
+        button.onclick = () => {
+            document.body.removeChild(container);
+            if (callback) callback();
+        };
+        
+        // 호버 효과
+        button.onmouseover = () => {
+            button.style.background = '#2980b9';
+            button.style.transform = 'scale(1.05)';
+        };
+        button.onmouseout = () => {
+            button.style.background = '#3498db';
+            button.style.transform = 'scale(1)';
+        };
+    }
+
+    // 사진 촬영 유도 UI 표시 메서드 추가
+    _showPhotoPromptUI() {
+        if (this.photoUIShown) return;
+        
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '20%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 255, 255, 0.95)',
+            color: '#333',
+            padding: '20px 30px',
+            borderRadius: '12px',
+            zIndex: '2001',  // 투표 용지 UI보다 위에 표시
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            fontSize: '18px',
+            textAlign: 'center',
+            maxWidth: '400px'
+        });
+        container.id = 'photo-prompt';
+        container.innerHTML = `
+            <p style="margin-bottom: 20px;">
+                아~ 투표한 거 자랑하고 싶네~<br>
+                사진이나 찍을까? 📱
+            </p>
+            <button id="photo-button" style="
+                padding: 12px 24px;
+                font-size: 20px;
+                background: #FF6B6B;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+            ">📸 찰칵!</button>
+        `;
+        
+        document.body.appendChild(container);
+        this.photoUIShown = true;
+        
+        // 핸드폰 든 손 애니메이션 시작
+        this._animatePhone();
+        
+        // 버튼 클릭 이벤트
+        container.querySelector('#photo-button').onclick = () => {
+            this._onPhotoAttempt();
+        };
+        
+        // 버튼 호버 효과
+        const button = container.querySelector('#photo-button');
+        button.onmouseover = () => {
+            button.style.background = '#FF5252';
+            button.style.transform = 'scale(1.05)';
+        };
+        button.onmouseout = () => {
+            button.style.background = '#FF6B6B';
+            button.style.transform = 'scale(1)';
+        };
+    }
+
+    // 핸드폰 든 손 애니메이션 메서드 추가
+    _animatePhone() {
+        if (!this.phone) {
+            console.error('❌ phone is null!');
+            return;
+        }
+        
+        this.phone.visible = true;
+        let animationFrame;
+        let animationStartTime = Date.now();
+        
+        const updatePhonePosition = () => {
+            if (!this.phone.visible) {
+                cancelAnimationFrame(animationFrame);
+                return;
+            }
+            
+            const elapsed = Date.now() - animationStartTime;
+            const animationDuration = 1000; // 1초 동안 올라오는 애니메이션
+            
+            // 카메라 앞쪽에 위치 설정
+            const cameraDirection = new THREE.Vector3();
+            this.camera.getWorldDirection(cameraDirection);
+            
+            // 카메라 앞 5 유닛, 약간 오른쪽으로
+            const distance = 4;
+            const rightOffset = 2;
+            const basePosition = this.camera.position.clone();
+            basePosition.add(cameraDirection.multiplyScalar(distance));
+            
+            // 오른쪽으로 이동
+            const right = new THREE.Vector3();
+            right.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0)).normalize();
+            basePosition.add(right.multiplyScalar(rightOffset));
+            
+            this.phone.position.x = basePosition.x;
+            this.phone.position.z = basePosition.z;
+            
+            // Y 위치 애니메이션 (아래에서 위로)
+            if (elapsed < animationDuration) {
+                const progress = elapsed / animationDuration;
+                const easeOut = 1 - Math.pow(1 - progress, 3); // ease-out 효과
+                this.phone.position.y = this.camera.position.y - 5 + (easeOut * 3);
+            } else {
+                this.phone.position.y = this.camera.position.y - 2;
+            }
+            
+            // 카메라를 향해 회전 (세로 방향 유지)
+            this.phone.lookAt(this.camera.position);
+            this.phone.rotation.z = 0; // Z축 회전 제거 (세로 유지)
+            
+            // 약간의 흔들림 효과
+            const time = Date.now() * 0.001;
+            this.phone.rotation.y += Math.sin(time * 2) * 0.02;
+            this.phone.rotation.x = Math.sin(time * 1.5) * 0.01;
+            
+            animationFrame = requestAnimationFrame(updatePhonePosition);
+        };
+        
+        updatePhonePosition();
+    }
+
+    // 사진 촬영 시도 시 처리 메서드 추가
+    _onPhotoAttempt() {
+        // 경고 메시지 표시
+        this._showCustomAlert('⚠️ 투표소 내 촬영은 금지되어 있습니다!\n선거법 위반으로 처벌받을 수 있습니다.');
+
+        // 모든 UI 제거
+        this._clearPhotoUI();
+        const ballotUI = document.getElementById('vote-ballot');
+        if (ballotUI) ballotUI.remove();
+        
+        // 씬 강제 종료 (홈 씬으로 전환)
+        setTimeout(() => {
+            console.log('📸 촬영 시도로 인한 씬 종료');
+            this.sceneManager.transitionTo('home'); // 또는 원하는 다른 씬으로
+        }, 2000);
+    }
+
+    // 사진 촬영 관련 UI 정리 메서드 추가
+    _clearPhotoUI() {
+        // 타이머 취소
+        if (this.photoTimer) {
+            clearTimeout(this.photoTimer);
+            this.photoTimer = null;
+        }
+        
+        // UI 제거
+        const promptUI = document.getElementById('photo-prompt');
+        if (promptUI) promptUI.remove();
+        this.photoUIShown = false;
+        
+        // 핸드폰 숨기기
+        if (this.phone) {
+            this.phone.visible = false;
+        }
     }
 
     _showReturnHomeUI() {
@@ -924,6 +1210,9 @@ export default class SceneMainVote {
         // 하이라이트 및 호버 라벨 정리
         this._clearHighlight();
         this._hideHoverLabel();
+
+        // 사진 촬영 UI 정리
+        this._clearPhotoUI();
     }
 
     // 매 프레임마다 호출
