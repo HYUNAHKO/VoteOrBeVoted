@@ -6,16 +6,15 @@ import * as THREE from 'three';
 import SceneIntro from './scenes/SceneIntro.js';
 import SceneManager from './SceneManager.js';
 import SceneVotingBooth from './scenes/SceneVotingBooth.js';
-import SceneTVCount from './scenes/SceneTVCount.js';
 import SceneVoteChoice from './scenes/SceneVoteChoice.js';
 import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
 import EndingScene from './scenes/EndingScene.js';
 import ResultBroadcastScene from './scenes/ResultBroadcastScene.js';
-// import ResultVictoryScene from './scenes/ResultVictoryScene.js';
-// import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
-// import SceneEarlyVote from './scenes/SceneEarlyVote.js';
-// import SceneMainVote from './scenes/SceneMainVote.js';
+import ResultVictoryScene from './scenes/ResultVictoryScene.js';
+import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
+import SceneEarlyVote from './scenes/SceneEarlyVote.js';
+import SceneMainVote from './scenes/SceneMainVote.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   THREE.ColorManagement.enabled = true;
@@ -60,12 +59,13 @@ window.addEventListener('DOMContentLoaded', () => {
   // 4) 씬 인스턴스 생성 및 등록
   sceneManager.addScene('intro', () => new SceneIntro(renderer, camera, sceneManager));
   sceneManager.addScene('votingBooth', () => new SceneVotingBooth(renderer, camera, sceneManager));
-  sceneManager.addScene('tvCount', () => new SceneTVCount(renderer, camera, sceneManager));
   sceneManager.addScene('voteChoice', () => new SceneVoteChoice(renderer, camera, sceneManager));
   sceneManager.addScene('home', () => new SceneHome(renderer, camera, sceneManager));
   sceneManager.addScene('returnHome', () => new SceneReturnHome(renderer, camera, sceneManager));
   sceneManager.addScene('ending', () => new EndingScene(renderer, camera, sceneManager));
   sceneManager.addScene('resultBroadcast', () => new ResultBroadcastScene(renderer, camera, sceneManager));
+  sceneManager.addScene('earlyVote', () => new SceneEarlyVote(renderer, camera, sceneManager));
+  sceneManager.addScene('mainVote', () => new SceneMainVote(renderer, camera, sceneManager));
 
   // 5) 렌더링 루프 먼저 시작
   sceneManager.renderLoop();

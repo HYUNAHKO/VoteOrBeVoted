@@ -1,5 +1,6 @@
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { envModelLoader } from '../utils/processImport.js';
+import CollisionControl from '../utils/collisionControl.js';
 
 export default class SceneReturnHome {
     constructor(renderer, camera, sceneManager) {
@@ -7,6 +8,7 @@ export default class SceneReturnHome {
         this.camera = camera;
         this.sceneManager = sceneManager;
         this.scene = new THREE.Scene();
+        this.collisionControl = new CollisionControl(camera);
         
         // 초기화 상태 추적
         this.initialized = false;
@@ -26,7 +28,7 @@ export default class SceneReturnHome {
         this.previousMousePosition = { x: 0, y: 0 };
         this.cameraRotation = { horizontal: 0, vertical: 0 };
         this.rotationLimits = {
-            horizontal: { min: -Math.PI / 3, max: Math.PI / 3 },
+            horizontal: { min: -Math.PI / 2, max: Math.PI / 2},
             vertical: { min: -Math.PI / 6, max: Math.PI / 6 }
         };
         this.rotationSpeed = 0.002;
@@ -50,7 +52,7 @@ export default class SceneReturnHome {
     }
 
     // --------------------------
-    // 무거운 초기화 작업들 (onEnter에서 호출)
+    //  initialize scene (called in onEnter)
     // --------------------------
     _initScene() {
         // 기본 안개 설정
@@ -151,9 +153,20 @@ export default class SceneReturnHome {
             possiblePaths,
             this.scene,
             (modelRoot) => {
+                // 모델 90도 회전 (Y축 기준)
+                modelRoot.rotation.y = Math.PI / 2;
+                
                 // 성공 콜백: 모델이 로드되면 Wall_Poster 오브젝트를 찾아서 저장
                 this.wallPosterObject = envModelLoader.findObjectInModel('outdoor', 'Wall_Poster');
+                
                 console.log('Outdoor model loaded successfully');
+                
+                // 충돌 오브젝트 등록
+                this.collisionControl.addCollidableModel(modelRoot);
+                this.collisionControl.removeCollidableObject(this.wallPosterObject);
+                
+                // 디버그용: 충돌 오브젝트 수 출력
+                console.log(`Registered collision objects: ${this.collisionControl.getCollidableObjectCount()}`);
             },
             null,
             (error) => {
@@ -220,8 +233,10 @@ export default class SceneReturnHome {
             
             // Wall_Poster 오브젝트만 체크 (단일 오브젝트)
             if (this.wallPosterObject) {
+                // 벽보의 월드 위치 가져오기
+                const wallPosterWorldPos = this.wallPosterObject.getWorldPosition(new THREE.Vector3());
                 // 카메라와 Wall_Poster 사이의 거리 체크
-                const distance = this.camera.position.distanceTo(this.wallPosterObject.position);
+                const distance = this.camera.position.distanceTo(wallPosterWorldPos);
                 
                 if (distance <= this.interactionDistance) {
                     const intersects = this.raycaster.intersectObject(this.wallPosterObject, true);
@@ -285,8 +300,10 @@ export default class SceneReturnHome {
             
             // Wall_Poster 오브젝트만 체크 (단일 오브젝트)
             if (this.wallPosterObject) {
+                // 벽보의 월드 위치 가져오기
+                const wallPosterWorldPos = this.wallPosterObject.getWorldPosition(new THREE.Vector3());
                 // 카메라와 Wall_Poster 사이의 거리 체크
-                const distance = this.camera.position.distanceTo(this.wallPosterObject.position);
+                const distance = this.camera.position.distanceTo(wallPosterWorldPos);
                 
                 if (distance <= this.interactionDistance) {
                     const intersects = this.raycaster.intersectObject(this.wallPosterObject, true);
@@ -296,6 +313,8 @@ export default class SceneReturnHome {
                     }
                 } else {
                     console.log(`Wall_Poster is too far away: ${distance.toFixed(1)} units (max: ${this.interactionDistance})`);
+                    console.log(`Camera position: ${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)}`);
+                    console.log(`Wall_Poster world position: ${wallPosterWorldPos.x.toFixed(1)}, ${wallPosterWorldPos.y.toFixed(1)}, ${wallPosterWorldPos.z.toFixed(1)}`);
                 }
             }
         };
@@ -319,7 +338,7 @@ export default class SceneReturnHome {
         
         document.getElementById('pass-by').onclick = () => {
             this.modal.style.display = 'none';
-            this.sceneManager.transitionTo('tvCount'); // 씬 이름 수정
+            this.sceneManager.transitionTo('resultBroadcast'); // 씬 이름 수정
         };
     }
 
@@ -348,7 +367,10 @@ export default class SceneReturnHome {
             movement.addScaledVector(right, direction.x * this.moveSpeed);
             movement.y = 0;
             
-            this.camera.position.add(movement);
+            // 충돌 체크 후 이동
+            if (this.collisionControl.preventCollision(movement)) {
+                this.camera.position.add(movement);
+            }
         }
     }
 
@@ -367,8 +389,8 @@ export default class SceneReturnHome {
             console.log('✅ SceneReturnHome 초기화 완료');
         }
         
-        // 카메라 초기 위치 설정
-        this.camera.position.set(-10, 10, 130);
+        // 카메라 초기 위치 설정 (회전된 모델에 맞게 조정)
+        this.camera.position.set(-130, 10, 15);
         
         // 이벤트 리스너 등록 (매번 입장할 때마다)
         window.addEventListener('keydown', this.onKeyDown);
@@ -383,10 +405,10 @@ export default class SceneReturnHome {
         this._hideAllUI();
         this._showFloatingMessage();
         
-        // 5초 후 휴대폰 UI 표시
+        // 10초 후 휴대폰 UI 표시
         setTimeout(() => {
             this._showPhoneUI();
-        }, 7000);
+        }, 10000);
     }
 
     // 씬 종료 시 호출

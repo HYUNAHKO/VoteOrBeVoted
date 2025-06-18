@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { EnvModelLoader, CharacterModelLoader } from '../utils/processImport.js';
+import CollisionControl from '../utils/collisionControl.js';
 
 export default class SceneEarlyVote {
     constructor(renderer, camera, sceneManager) {
@@ -7,11 +8,19 @@ export default class SceneEarlyVote {
         this.camera = camera;
         this.sceneManager = sceneManager;
         this.scene = new THREE.Scene();
+
+        // 충돌 체크 시스템
+        this.collisionControl = new CollisionControl(this.camera);
+        this.collisionControl.setCollisionDistance(3.0);
         
         // 모델 로더들
         this.envModelLoader = new EnvModelLoader();
         this.characterModelLoader = new CharacterModelLoader();
         
+        // 집 돌아가는 위치 및 상태
+        this.returnHomePosition = new THREE.Vector3(37.57, 10, 88.56); // return home 위치 {x: 37.57, y: 10, z: 88.56}
+        this.returnHomeShown   = false;
+
         // 이동 및 인터랙션 시스템
         this.keys = { w: false, a: false, s: false, d: false };
         this.moveSpeed = 0.3;
@@ -23,7 +32,7 @@ export default class SceneEarlyVote {
         this.previousMousePosition = { x: 0, y: 0 };
         this.cameraRotation = { horizontal: 0, vertical: 0 }; // 현재 회전 각도
         this.rotationLimits = {
-            horizontal: { min: -Math.PI / 3, max: Math.PI / 2 }, // ±60도
+            horizontal: { min: -Infinity,    max: Infinity    }, // 카메라 회전 해제
             vertical: { min: -Math.PI / 6, max: Math.PI / 3 }     // ±30도
         };
         this.rotationSpeed = 0.002;
@@ -41,13 +50,31 @@ export default class SceneEarlyVote {
         this.highlightMaterial = new THREE.MeshBasicMaterial({ 
             color: 0xffff00, 
             transparent: true, 
-            opacity: 0.5 
+            opacity: 0.9 
         });
         
+        // 투표 용지 받았는지 여부
+        this.ballotReceived = false;           // 투표 용지 받은 상태
+        this.ballotSubmitted = false; // 투표 용지 제출 여부
+        this.pollingBoothPositions = [        // 기표소 위치 리스트
+            new THREE.Vector3(1.18, 15, -22.49),
+            new THREE.Vector3(14.18,15, -22.4),
+            new THREE.Vector3(33.12,15, -20.9),
+            new THREE.Vector3(52.67,15, -20.83)
+        ];
+
+        // 투표함 위치 리스트
+        this.electionBoxPositions = [
+            new THREE.Vector3(16.63, 15, -4.09),
+            new THREE.Vector3(28.4,  15, -3.93)
+        ];
+        this.selectedCandidate = null;
+
         this._initScene();
         this._createUI();
         this._loadEnvironmentAndCharacters();
         this._setupEventListeners();
+        this._createReturnHomeGlow();
     }
 
     // --------------------------
@@ -74,8 +101,27 @@ export default class SceneEarlyVote {
         this.camera.position.set(0, 5, 10);
         
         // 배경색 설정
-        this.scene.background = new THREE.Color(0x87CEEB); // 하늘색
+        this.scene.background = new THREE.Color(0xC0C0C0); // 연한 회색
     }
+
+    // 집 가는 부분 Glow 생성
+    _createReturnHomeGlow() {
+
+        const glowRadius = 5;  
+        const glowGeo    = new THREE.SphereGeometry(glowRadius, 32, 32);
+        const glowMat    = new THREE.MeshBasicMaterial({
+            color:       0x00ff88,
+            transparent: true,
+            opacity:     0.8,             // 더 진하게 할 수도 있음요
+            side:        THREE.DoubleSide
+        });
+
+        this.returnHomeGlow = new THREE.Mesh(glowGeo, glowMat);
+        this.returnHomeGlow.position.copy(this.returnHomePosition);
+        this.returnHomeGlow.scale.setScalar(1.5);  // 초기 스케일도 좀 키워줌
+        this.scene.add(this.returnHomeGlow);
+    }
+
 
     _createUI() {
         // 도움말 UI
@@ -98,7 +144,6 @@ export default class SceneEarlyVote {
             <div>마우스 좌클릭+드래그: 카메라 회전</div>
             <div>H: 씬 hierarchy 출력 (콘솔 확인)</div>
         `;
-        document.body.appendChild(this.helpUI);
         
         // 호버 라벨 UI 추가
         this.hoverLabel = document.createElement('div');
@@ -114,7 +159,6 @@ export default class SceneEarlyVote {
             z-index: 2000;
             display: none;
         `;
-        document.body.appendChild(this.hoverLabel);
     }
 
     _loadEnvironmentAndCharacters() {
@@ -135,7 +179,8 @@ export default class SceneEarlyVote {
                 // earlyVote.glb 모델 설정
                 modelRoot.scale.set(3, 3, 3);
                 modelRoot.rotation.y = Math.PI / 2; // 90도 회전
-                
+
+                this.collisionControl.addCollidableModel(modelRoot);
                 // 환경 모델 로드 완료 후 캐릭터들 로드
                 this._loadCharacters();
                 
@@ -252,7 +297,9 @@ export default class SceneEarlyVote {
                         root: characterRoot,
                         config: config
                     });
-                    
+
+                    this.collisionControl.addCollidableModel(characterRoot);
+
                     // 캐릭터 로드 완료 후 상호작용 가능한 오브젝트 다시 찾기 (SkinnedMesh 포함)
                     setTimeout(() => {
                         this._findInteractableObjects();
@@ -472,9 +519,46 @@ export default class SceneEarlyVote {
         };
 
         this.onMouseClick = (event) => {
-            // 카메라 회전 중이면 클릭 무시
             if (this.isRotating) return;
+            this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const hits = this.raycaster.intersectObjects(this.interactableObjects, true);
+            if (hits.length === 0) return;
+
+            const target = this._findTargetParent(hits[0].object);
+            const type   = this._getObjectType(target.name || '');
+
+            // 선거 안내원 or 투표 용지 클릭 -> 투표 용지 받기
+            if (type === 'character' || type === 'ballot') {
+                this._receiveBallot();
+            }
+            // 투표함 클릭 -> _submitVote 호출
+            else if (type === 'box') {
+                if (!this.selectedCandidate) {
+                    alert('먼저 기표소에서 후보를 선택하세요.');
+                } else {
+                    this._submitVote();
+                }
+            }
         };
+    }
+
+    _submitVote() {
+        if (this.ballotSubmitted) return;
+        console.log(`✅ 최종 투표: ${this.selectedCandidate}`);
+        alert(`투표함에 ${this.selectedCandidate} 로 투표되었습니다!`);
+        this.ballotSubmitted = true;
+    }
+    
+    _getObjectType(objectName) {
+        const name = (objectName || '').toLowerCase();
+        if (name.includes('pollingbooth')) return 'booth';
+        if (name.includes('electionbox'))   return 'box';
+        if (name.includes('ballot'))        return 'ballot';
+        if (name.includes('stamp'))         return 'stamp';
+        return 'character';
     }
 
     _handleHover(event) {
@@ -508,13 +592,35 @@ export default class SceneEarlyVote {
                     const rawObjectName = targetParent.name || 'Unknown Object';
                     const displayName = this._getDisplayName(rawObjectName);
                     this._showHoverLabel(event, displayName);
+                    
+                    // 호버된 오브젝트 정보 저장 및 콘솔 출력
+                    this._logHoveredObject(targetParent, displayName, distance);
+                    
                     return;
                 }
             }
         }
         
-        // 호버 대상이 없으면 라벨 숨김
+        // 호버 대상이 없으면 라벨 숨김 및 현재 호버 오브젝트 초기화
         this._hideHoverLabel();
+        this.currentHoveredObject = null;
+    }
+
+    _logHoveredObject(targetObject, displayName, distance) {
+        // 현재 호버 중인 오브젝트가 변경된 경우에만 로깅
+        if (this.currentHoveredObject !== targetObject) {
+            this.currentHoveredObject = targetObject;
+            
+            // 콘솔에 호버된 오브젝트 정보 출력
+            console.log('=== HOVERED OBJECT ===');
+            console.log(`Display Name: ${displayName}`);
+            console.log(`Object Name: ${targetObject.name || 'unnamed'}`);
+            console.log(`Object Type: ${targetObject.constructor.name}`);
+            console.log(`Distance: ${distance.toFixed(2)}`);
+            console.log(`Position:`, targetObject.position);
+            console.log(`Object:`, targetObject);
+            console.log('======================');
+        }
     }
 
     _applyHighlightToGroup(parentObject) {
@@ -560,8 +666,6 @@ export default class SceneEarlyVote {
         this.hoverLabel.style.display = 'none';
     }
 
-
-
     _updateMovement() {
         const direction = new THREE.Vector3();
         
@@ -587,8 +691,129 @@ export default class SceneEarlyVote {
             movement.addScaledVector(right, direction.x * this.moveSpeed);           // 좌우
             movement.y = 0; // Y축 이동 제한
             
-            this.camera.position.add(movement);
+            // 충돌 체크 후 이동
+            if (this.collisionControl.preventCollision(movement)) {
+                this.camera.position.add(movement);
+            }
         }
+    }
+
+    _receiveBallot() {
+        if (this.ballotReceived) return;
+
+        console.log('🗳️ 투표 용지를 받았습니다!');
+        alert('🗳️ 투표 용지를 받았습니다! 투표하세요.');
+        this.ballotReceived = true;  // ◀️ 여기를 추가
+    }
+
+    _showVoteConfirmUI() {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed', top:'50%', left:'50%',
+            transform:'translate(-50%,-50%)',
+            background:'rgba(0,0,0,0.8)', color:'#fff',
+            padding:'20px', borderRadius:'8px', zIndex:'2000'
+        });
+        container.id = 'vote-confirm';
+        container.innerHTML = `
+            <p>🗳️ 기표소에 도착했습니다. 투표하시겠습니까?</p>
+            <button id="vote-yes">예</button>
+            <button id="vote-no">아니오</button>
+        `;
+        document.body.appendChild(container);
+
+        container.querySelector('#vote-yes').onclick = () => {
+            document.body.removeChild(container);
+            this._showBallotUI();
+        };
+        container.querySelector('#vote-no').onclick = () => {
+            document.body.removeChild(container);
+        };
+    }
+
+    _showBallotUI() {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: '#fff',
+            color: '#000',
+            padding: '30px',
+            borderRadius: '12px',
+            zIndex: '2000',
+            width: '360px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            fontSize: '18px',
+            textAlign: 'center',
+        });
+        container.id = 'vote-ballot';
+        container.innerHTML = `
+            <h2 style="margin-bottom:20px; font-size:24px;">🗳️ 투표 용지</h2>
+            <div style="margin-bottom:20px; text-align:left;">
+            <label style="display:block; margin-bottom:10px; font-size:18px;">
+                <input type="radio" name="cand" value="김후보" style="transform:scale(1.2); margin-right:8px;">
+                김후보
+            </label>
+            <label style="display:block; margin-bottom:10px; font-size:18px;">
+                <input type="radio" name="cand" value="이후보" style="transform:scale(1.2); margin-right:8px;">
+                이후보
+            </label>
+            <label style="display:block; margin-bottom:20px; font-size:18px;">
+                <input type="radio" name="cand" value="박후보" style="transform:scale(1.2); margin-right:8px;">
+                박후보
+            </label>
+            </div>
+            <button id="ballot-submit" style="
+            width:100%;
+            padding:12px 0;
+            font-size:18px;
+            font-weight:bold;
+            background:#3498db;
+            color:#fff;
+            border:none;
+            border-radius:6px;
+            cursor:pointer;
+            ">제출</button>
+        `;
+        document.body.appendChild(container);
+
+        container.querySelector('#ballot-submit').onclick = () => {
+        const sel = container.querySelector('input[name="cand"]:checked');
+        if (!sel) {
+            alert('후보를 선택해주세요.');
+            return;
+        }
+        this.selectedCandidate = sel.value;      
+        alert(`투표 용지에 ${sel.value} 선택 완료!\n투표함으로 이동하세요.`);
+        document.body.removeChild(container);
+        };
+    }
+
+    _showReturnHomeUI() {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            position: 'fixed', top:'50%', left:'50%',
+            transform:'translate(-50%,-50%)',
+            background:'rgba(0,0,0,0.8)', color:'#fff',
+            padding:'20px', borderRadius:'8px', zIndex:'2000'
+        });
+        container.id = 'return-home-confirm';
+        container.innerHTML = `
+            <p>🏠 집으로 돌아가시겠습니까?</p>
+            <button id="return-yes">예</button>
+            <button id="return-no">아니오</button>
+        `;
+        document.body.appendChild(container);
+
+        container.querySelector('#return-yes').onclick = () => {
+            document.body.removeChild(container);
+            this.sceneManager.transitionTo('returnHome');
+        };
+        container.querySelector('#return-no').onclick = () => {
+            document.body.removeChild(container);
+        };
     }
 
     _applyCameraRotation() {
@@ -609,6 +834,10 @@ export default class SceneEarlyVote {
         this.cameraRotation.vertical = 0;
         this._applyCameraRotation();
         
+        // UI를 DOM에 추가
+        document.body.appendChild(this.helpUI);
+        document.body.appendChild(this.hoverLabel);
+        
         // 이벤트 리스너 등록
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
@@ -617,9 +846,6 @@ export default class SceneEarlyVote {
         window.addEventListener('mouseup', this.onMouseUp);
         window.addEventListener('contextmenu', this.onContextMenu);
         window.addEventListener('click', this.onMouseClick);
-        
-        // UI 표시
-        this.helpUI.style.display = 'block';
         
         // 씬 hierarchy 자동 출력 (3초 후 - 모델들이 로드된 후)
         setTimeout(() => {
@@ -638,8 +864,13 @@ export default class SceneEarlyVote {
         window.removeEventListener('contextmenu', this.onContextMenu);
         window.removeEventListener('click', this.onMouseClick);
         
-        // UI 숨김
-        this.helpUI.style.display = 'none';
+        // UI를 DOM에서 제거
+        if (this.helpUI.parentNode) {
+            this.helpUI.parentNode.removeChild(this.helpUI);
+        }
+        if (this.hoverLabel.parentNode) {
+            this.hoverLabel.parentNode.removeChild(this.hoverLabel);
+        }
         
         // 하이라이트 및 호버 라벨 정리
         this._clearHighlight();
@@ -650,8 +881,47 @@ export default class SceneEarlyVote {
     update() {
         this._updateMovement();
         
+        if (Date.now() % 500 < 16) {
+            console.log('🚶 현재 위치:', {
+                x: Math.round(this.camera.position.x * 100) / 100,
+                y: Math.round(this.camera.position.y * 100) / 100,
+                z: Math.round(this.camera.position.z * 100) / 100
+            });
+        }
         // 캐릭터 애니메이션 업데이트
         this.characterModelLoader.updateAllAnimations(0.016); // 대략 60fps
+
+        // 투표 용지 받은 뒤, 기표소 근처에 가면 확인창 띄우기 
+        if (this.ballotReceived && !this.voteConfirmShown) {
+            const camPos = this.camera.position;
+            for (const boothPos of this.pollingBoothPositions) {
+            if (camPos.distanceTo(boothPos) < 5) {      // 거리 임계값(5) 이하이면
+                this._showVoteConfirmUI();
+                this.voteConfirmShown = true;             // 한 번만 띄우기
+                break;
+            }
+            }
+        }
+
+        if (this.ballotSubmitted && !this.returnHomeShown) {
+            const camPos = this.camera.position;
+            const dx = camPos.x - this.returnHomePosition.x;
+            const dz = camPos.z - this.returnHomePosition.z;
+            if (Math.hypot(dx, dz) < 5) {
+                this._showReturnHomeUI();
+                this.returnHomeShown = true;
+            }
+        }
+
+
+        if (this.returnHomeGlow) {
+            const t = Date.now() * 0.002;
+            // 투명도 펄스
+            this.returnHomeGlow.material.opacity = 0.1 + Math.sin(t * 3) * 0.1;
+            // 스케일 펄스
+            const s = 1.0 + Math.sin(t * 3) * 0.2;
+            this.returnHomeGlow.scale.setScalar(s);
+        }
     }
 
     // 렌더링 (SceneManager에서 호출)
