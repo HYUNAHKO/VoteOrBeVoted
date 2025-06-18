@@ -58,6 +58,7 @@ export default class Candidate {
     this.animationClips.forEach(clip => {
       const action = this.mixer.clipAction(clip);
       action.reset();
+      action.time = 3;   // 시작 위치를 3초로 설정
       action.play();
     });
   }

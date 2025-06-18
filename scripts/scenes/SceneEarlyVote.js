@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { EnvModelLoader, CharacterModelLoader } from '../utils/processImport.js';
 import CollisionControl from '../utils/collisionControl.js';
+import { GameState } from '../utils/GameState.js';
 
 export default class SceneEarlyVote {
     constructor(renderer, camera, sceneManager) {
@@ -854,6 +855,7 @@ export default class SceneEarlyVote {
             this._showCustomAlert('후보를 선택해주세요.');
             return;
         }
+        GameState.selectedCandidate = sel.value;
         this.selectedCandidate = sel.value;
         this._showCustomAlert(`투표 용지에 ${sel.value} 선택 완료!\n투표함으로 이동하세요.`);
 

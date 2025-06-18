@@ -11,8 +11,6 @@ import SceneHome from './scenes/SceneHome.js';
 import SceneReturnHome from './scenes/SceneReturnHome.js';
 import EndingScene from './scenes/EndingScene.js';
 import ResultBroadcastScene from './scenes/ResultBroadcastScene.js';
-import ResultVictoryScene from './scenes/ResultVictoryScene.js';
-import ResultFiveYearsLaterScene from './scenes/ResultFiveYearsLaterScene.js';
 import SceneEarlyVote from './scenes/SceneEarlyVote.js';
 import SceneMainVote from './scenes/SceneMainVote.js';
 
