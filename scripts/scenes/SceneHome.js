@@ -1043,7 +1043,7 @@ export default class SceneHome {
       
       if (hasBadWord) {
         // 처벌 메시지와 함께 리스폰 위치 설정
-        this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다. 메인 화면으로 돌아갑니다.');
+        this._showCustomAlert('비방성 댓글은 처벌받을 수 있습니다.');
           
         // 1) 카메라 위치를 리스폰 지점으로 미리 설정
         const respawnPosition = new THREE.Vector3(104.98, 50, 499.92);
