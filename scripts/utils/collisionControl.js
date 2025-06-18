@@ -107,7 +107,7 @@ export default class CollisionControl {
             new THREE.Vector3(cameraPos.x, cameraPos.y, cameraPos.z),           // 카메라 높이
             new THREE.Vector3(cameraPos.x, cameraPos.y - 1, cameraPos.z),      // 카메라 아래 1m
             new THREE.Vector3(cameraPos.x, cameraPos.y - 2, cameraPos.z),      // 카메라 아래 2m
-            new THREE.Vector3(cameraPos.x, Math.max(-10, cameraPos.y - 10), cameraPos.z) // 카메라 아래 3m (최소 0)
+            new THREE.Vector3(cameraPos.x, Math.max(-100, cameraPos.y - 100), cameraPos.z) // 카메라 아래 3m (최소 0)
         ];
 
         this.direction.copy(movement).normalize();
