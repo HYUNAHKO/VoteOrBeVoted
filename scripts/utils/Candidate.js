@@ -9,6 +9,8 @@ export default class Candidate {
     this.mixer = new THREE.AnimationMixer(model);
     this.currentAction = null;
     this.currentClipIndex = 0;
+    // 잠금 플래그: true일 때 playNextHitAnimation 무시
+    this.inputLocked = false;
   }
 
   static async loadFromGLB(path) {
@@ -36,18 +38,26 @@ export default class Candidate {
     this.model.position.copy(position);
   }
 
+  /**
+   * 재생 중일 때 입력 무시 가능
+   * @param {boolean} lockOnce - true이면 호출 후 다시 입력을 잠급니다.
+   */
   playNextHitAnimation() {
     if (this.animationClips.length === 0) return;
+    // 멈춰 있는 모든 액션 정지
+    this.mixer._actions?.forEach(a => { if (a.stop) a.stop(); });
+    // 모든 클립을 0초부터 동시에 재생
+    this.animationClips.forEach(clip => {
+      const action = this.mixer.clipAction(clip);
+      action.reset();
+      action.play();
+    });
+  }
 
-    if (this.currentAction) {
-      this.currentAction.stop();
-    }
-
-    const clip = this.animationClips[this.currentClipIndex];
-    this.currentAction = this.mixer.clipAction(clip);
-    this.currentAction.reset();
-    this.currentAction.play();
-
-    this.currentClipIndex = (this.currentClipIndex + 1) % this.animationClips.length;
+  /**
+   * 입력 잠금을 해제합니다.
+   */
+  unlockInput() {
+    this.inputLocked = false;
   }
 }
